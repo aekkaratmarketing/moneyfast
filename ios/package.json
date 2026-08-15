@@ -1,0 +1,19 @@
+{
+  "name": "moneyfast-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MoneyFast iOS app (Capacitor) — wraps the web admin app",
+  "scripts": {
+    "sync:www": "node sync-www.js",
+    "cap:add": "npx cap add ios",
+    "cap:sync": "npx cap sync ios",
+    "build:ipa": "bash build-ipa.sh"
+  },
+  "dependencies": {
+    "@capacitor/core": "latest",
+    "@capacitor/ios": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest"
+  }
+}

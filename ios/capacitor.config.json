@@ -1,0 +1,8 @@
+{
+  "appId": "com.moneyfast.app",
+  "appName": "MoneyFast",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

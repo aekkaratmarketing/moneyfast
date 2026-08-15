@@ -1,0 +1,56 @@
+name: Build iOS .ipa
+
+on:
+  push:
+    paths:
+      - 'admin.html'
+      - 'manifest.json'
+      - 'sw.js'
+      - 'icon-*.png'
+      - 'apple-touch-icon.png'
+      - 'ios/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sync web assets + install Capacitor
+        working-directory: ios
+        run: |
+          node sync-www.js
+          npm install
+
+      - name: Add + sync iOS platform
+        working-directory: ios
+        run: |
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Build .ipa (unsigned)
+        working-directory: ios
+        run: |
+          cd ios
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
+            -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+          APP="build/Build/Products/Release-iphoneos/App.app"
+          rm -rf Payload && mkdir -p Payload && cp -r "$APP" Payload/
+          rm -f MoneyFast.ipa
+          zip -qr MoneyFast.ipa Payload/
+          ls -lh MoneyFast.ipa
+
+      - name: Upload .ipa
+        uses: actions/upload-artifact@v4
+        with:
+          name: MoneyFast-ipa
+          path: ios/ios/MoneyFast.ipa
+          if-no-files-found: error

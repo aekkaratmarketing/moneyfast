@@ -1,0 +1,27 @@
+# ข้อมูลลูกค้า / คีย์ลับ — ห้ามอัปโหลดขึ้น Git/GitHub
+data/
+*.json.key
+*serviceAccount*.json
+moneyfast-key.json
+
+# Node
+node_modules/
+functions/node_modules/
+ios/node_modules/
+
+# Capacitor — สร้างตอน build เท่านั้น
+ios/www/
+ios/ios/
+ios/*.ipa
+ios/Payload/
+
+# Firebase CLI
+.firebase/
+
+# ระบบ
+.DS_Store
+Thumbs.db
+*.log
+
+# Freebuff (แอปที่ใช้พัฒนา) — ฐานข้อมูลภายใน ไม่เกี่ยวกับโปรเจกต์
+.freebuff/

@@ -1,0 +1,2728 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Admin — MoneyFast</title>
+  <meta name="theme-color" content="#0e7a3c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="MoneyFast">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Noto+Sans+Lao:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Firebase SDK (compat) — ใช้เมื่อโหมด Firebase เปิดอยู่ (ดูบล็อก FB_CONFIG ด้านล่าง) -->
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/11.6.0/firebase-database-compat.js"></script>
+  <script>
+    /* ============================================================
+       🔥 ตั้งค่า Firebase (โหมด Firebase — หลัง deploy ขึ้น Firebase Hosting)
+
+       วิธีเอาค่า: คอนโซล Firebase → ⚙ ตั้งค่าโปรเจกต์ → ทั่วไป
+       → "แอปของคุณ" → กด </> (Web) → สร้างแอป → คัดลอกค่าใส่ด้านล่าง
+
+       ถ้ายังไม่ใส่ apiKey จริง (placeholder) → ระบบใช้โหมดเครื่องเดียว
+       (server.js ทดสอบในเครื่อง เหมือนเดิม) พอใส่ค่าแล้วจะสลับเป็น
+       โหมด Firebase อัตโนมัติ: ล็อกอินด้วย Firebase Auth + ข้อมูลใน
+       Realtime Database (ซิงค์ข้ามเครื่อง) โดยไม่ต้องมี backend ใด ๆ
+       ============================================================ */
+    window.FB_CONFIG = {
+      apiKey: 'YOUR_API_KEY', /* ← ต้องใส่ค่าจริงจากคอนโซล ถึงจะเข้าโหมด Firebase */
+      authDomain: 'moneyfast-b0ac0.firebaseapp.com',
+      databaseURL: 'https://moneyfast-b0ac0-default-rtdb.asia-southeast1.firebasedatabase.app',
+      projectId: 'moneyfast-b0ac0',
+      storageBucket: '',
+      messagingSenderId: '',
+      appId: ''
+    };
+  </script>
+  <style>
+    /* ===== MoneyFast Admin ===== */
+    :root {
+      --green: #0e7a3c;
+      --green-dark: #0a5c2d;
+      --green-deep: #063d1d;
+      --green-text: var(--green-dark);
+      --green-accent: var(--green);
+      --gold: #f5b301;
+      --gold-dark: #d99a00;
+      --bg: #f4f8f5;
+      --card: #ffffff;
+      --ink: #17301f;
+      --muted: #5c6f63;
+      --line: #e3ebe5;
+      --danger: #d43f3f;
+      --blue: #2563eb;
+      --radius: 16px;
+      --shadow: 0 12px 30px rgba(10, 70, 38, 0.1);
+      --font: 'Kanit', system-ui, sans-serif;
+      --font-lo: 'Noto Sans Lao', 'Kanit', system-ui, sans-serif;
+      color-scheme: light;
+    }
+
+    /* ໂໝດມືດ / โหมดมืด */
+    :root[data-theme="dark"] {
+      --green: #22a261;
+      --green-dark: #0a5c2d;
+      --green-deep: #072f1b;
+      --green-text: #6fd39b;
+      --green-accent: #4cc98a;
+      --gold: #f5b301;
+      --gold-dark: #f0b429;
+      --bg: #0c1310;
+      --card: #141e18;
+      --ink: #e2ece5;
+      --muted: #8fa397;
+      --line: #26382d;
+      --danger: #f07171;
+      --blue: #6ca8ff;
+      --shadow: 0 12px 30px rgba(0, 0, 0, .45);
+      color-scheme: dark;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* ແກ້ບັກ: ໃຫ້ attribute hidden ເຮັດວຽກກັບ CSS display / แก้บั๊ก: ให้ attribute hidden ทำงานกับ CSS display */
+    [hidden] { display: none !important; }
+
+    body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.55; overflow-x: hidden; }
+    html[lang="lo"] body { font-family: var(--font-lo); }
+    img { max-width: 100%; }
+    .ai-name, .ai-txt, .ai-line, .ci-name, .ci-profit, .ci-repay, .del-msg,
+    .pay-summary, .pay-preview, .form-summary, .empty-note, .chart-sub,
+    .login-sub, .page-head p { overflow-wrap: anywhere; }
+
+    .container { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+    a { text-decoration: none; color: inherit; }
+
+    /* Navbar */
+    .navbar { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); transition: box-shadow .2s ease; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 12px; padding-bottom: 12px; flex-wrap: wrap; }
+    .logo { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 21px; color: var(--green-text); }
+    .logo-icon { font-size: 21px; }
+    .logo-sub { font-size: 13px; font-weight: 400; color: var(--gold-dark); background: #fff7dd; padding: 2px 10px; border-radius: 999px; }
+    .nav-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .nav-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-left: auto; }
+    .nav-right .btn { flex-shrink: 0; white-space: nowrap; }
+
+    .lang-switch { display: flex; gap: 4px; background: #eef4f0; padding: 4px; border-radius: 999px; }
+    .lang-btn { border: none; background: transparent; padding: 6px 12px; border-radius: 999px; font-family: inherit; font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer; transition: background .15s ease, color .15s ease; }
+    .lang-btn:hover { color: var(--green); }
+    .lang-btn.active { background: var(--green); color: #fff; }
+    .lang-btn.active:hover { color: #fff; }
+
+    .theme-btn {
+      border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
+      width: 38px; height: 38px; border-radius: 50%; font-size: 17px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+    .theme-btn:hover { transform: translateY(-1px); border-color: var(--green); }
+
+
+    /* หน้าเข้าสู่ระบบ / ໜ້າເຂົ້າສູ່ລະບົບ */
+    #login-screen { min-height: calc(100vh - 200px); display: flex; align-items: center; justify-content: center; padding: 40px 0; }
+    .login-card { width: 100%; max-width: 420px; padding: 34px 32px; }
+    .login-logo { display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600; font-size: 22px; color: var(--green-text); margin-bottom: 22px; }
+    .login-card h2 { font-size: 24px; font-weight: 600; text-align: center; margin-bottom: 6px; }
+    .login-sub { color: var(--muted); font-size: 14px; text-align: center; margin-bottom: 22px; }
+    .login-card .field { margin-bottom: 14px; max-width: 280px; margin-left: auto; margin-right: auto; }
+    .login-card .field label { display: block; font-weight: 500; font-size: 14px; margin-bottom: 6px; }
+    .login-input { position: relative; }
+    .login-input .login-ic {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 15px; opacity: .85; pointer-events: none;
+    }
+    .login-card input {
+      width: 100%; padding: 12px 15px 12px 42px; border: 1.5px solid var(--line); border-radius: 11px;
+      font-family: inherit; font-size: 15px; color: var(--ink); background: #fff;
+    }
+    .login-card input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 4px rgba(14,122,60,.12); }
+    .login-error { display: none; background: #fdecec; border: 1px solid #f6c9c9; color: var(--danger); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-weight: 400; margin-bottom: 14px; }
+    .login-error.show { display: block; }
+    .login-error.lock { background: #fff7e0; border: 1px solid #f0d9a8; color: var(--gold-dark); font-weight: 500; }
+    .btn:disabled, input:disabled { opacity: .55; cursor: not-allowed; }
+    #login-form button[type="submit"] {
+      display: block; width: 100%; max-width: 280px; margin: 6px auto 0; padding: 13px 18px;
+      font-size: 15px; font-weight: 600; color: #fff; border: none;
+      background: linear-gradient(135deg, #1ec96b 0%, var(--green) 38%, var(--green-dark) 72%, var(--gold-dark) 118%);
+      box-shadow: 0 10px 24px rgba(14, 122, 60, .35), inset 0 1px 0 rgba(255, 255, 255, .18);
+    }
+    #login-form button[type="submit"]:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(14, 122, 60, .45), inset 0 1px 0 rgba(255, 255, 255, .18);
+    }
+    #login-form button[type="submit"]:active { transform: translateY(0); }
+
+    /* Header */
+    .page-head { padding: 34px 0 8px; }
+    .page-head h1 { font-size: 28px; font-weight: 600; }
+    .page-head p { color: var(--muted); font-size: 15px; margin-top: 4px; }
+    .sync-note { font-size: 12.5px; margin-top: 8px; display: inline-block; }
+    .sync-note.sync-on { color: var(--green-accent); }
+    .sync-note.sync-off { color: var(--danger); }
+
+    /* Stats */
+    .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; padding: 22px 0; }
+    .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); min-width: 0; }
+    .stat .st-num { font-size: clamp(18px, 4.6vw, 26px); font-weight: 600; color: var(--green-text); overflow-wrap: anywhere; line-height: 1.25; }
+    .stat .st-label { font-size: 13px; color: var(--muted); }
+    .stat.approved .st-num { color: var(--green-accent); }
+    .stat.profit .st-num { color: var(--gold-dark); }
+    @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+    /* Controls */
+    .controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+    .search-box { position: relative; flex: 1; min-width: 220px; }
+    .search-box input {
+      width: 100%; padding: 12px 16px 12px 40px;
+      border: 1.5px solid var(--line); border-radius: 12px;
+      font-family: inherit; font-size: 15px; color: var(--ink); background: #fff;
+    }
+    .search-box input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 4px rgba(14,122,60,.12); }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+
+    .toolbar-btns { display: flex; gap: 8px; margin-left: auto; }
+    .btn { display: inline-block; padding: 10px 18px; border: none; border-radius: 11px; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; transition: transform .15s ease, background .15s ease; }
+    .btn:hover { transform: translateY(-1px); }
+    .btn-green { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; }
+    .btn-ghost2 { background: #eef4f0; color: var(--green-text); border: 1.5px solid var(--line); }
+    .btn-danger { background: #fdecec; color: var(--danger); border: 1.5px solid #f6c9c9; }
+    .del-msg { font-size: 15px; line-height: 1.6; color: var(--ink); margin: 0 0 4px; }
+    .del-msg strong { color: var(--danger); }
+    .modal-center { max-width: 380px; text-align: center; }
+    .modal-actions-center { justify-content: center; }
+    .login-ok-icon { font-size: 46px; line-height: 1; margin-bottom: 10px; }
+
+    /* List */
+    .app-list { display: grid; gap: 12px; padding-bottom: 60px; }
+    .app-item {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 18px 20px; box-shadow: var(--shadow);
+      display: flex; flex-direction: column; align-items: stretch; gap: 12px;
+      border-left: 5px solid var(--gold);
+    }
+    .app-item[data-done="true"] {
+      background: linear-gradient(135deg, #f2faf4, #e5f5ea);
+      border: 1.5px solid #9fd8b4;
+      box-shadow: 0 0 0 3px rgba(14, 122, 60, .08), var(--shadow);
+    }
+    .app-item[data-done="true"] .ai-name { color: var(--green-text); }
+    .app-item[data-done="false"] {
+      background: linear-gradient(135deg, #fffaf0, #fdf1dd);
+      border: 1.5px solid #f0d9a8;
+      box-shadow: 0 0 0 3px rgba(245, 179, 1, .10), var(--shadow);
+    }
+    .app-item[data-done="false"] .ai-name { color: var(--gold-dark); }
+
+    .ai-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 0 1 auto; }
+    .ai-meta, .ai-doc { display: flex; align-items: center; gap: 6px; }
+    .ai-ic { width: 18px; text-align: center; flex-shrink: 0; }
+    .ai-dot { color: var(--muted); }
+    .ai-txt { min-width: 0; line-height: 1.5; }
+    .ai-name { font-weight: 600; font-size: 17px; }
+    .badge-cleared {
+      display: inline-block; margin-left: 8px; vertical-align: middle;
+      background: #e8f7ee; color: var(--green-accent); border: 1px solid #bde5cd;
+      border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-paying {
+      display: inline-block; margin-left: 8px; vertical-align: middle;
+      background: #fdf3d9; color: var(--gold-dark); border: 1px solid #f0d9a8;
+      border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600;
+      white-space: nowrap;
+    }
+    .ai-meta { color: var(--muted); font-size: 13px; }
+    .ai-doc { color: var(--muted); font-size: 13px; }
+    .ai-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); cursor: zoom-in; margin-top: 4px; transition: transform .15s ease; }
+    .ai-thumb:hover { transform: scale(1.06); }
+
+    .ai-money {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      width: 100%; min-width: 0;
+      background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .ai-amount { font-weight: 700; font-size: 17px; color: var(--green-text); }
+    .ai-line { font-size: 14px; line-height: 1.6; text-wrap: balance; }
+    .ai-due { font-weight: 600; color: var(--gold-dark); }
+    .ai-profit { font-weight: 600; color: var(--gold-dark); }
+    .ai-paid { font-weight: 500; color: var(--green-text); }
+    .ai-paid.done { color: var(--green-accent); font-weight: 600; }
+
+    .ai-controls { display: grid; gap: 8px; justify-items: center; }
+    .ai-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: min(100%, 460px); }
+    @media (min-width: 901px) {
+      .ai-actions { width: 100%; gap: 8px; }
+    }
+    .ai-actions > * { width: 100%; box-sizing: border-box; justify-content: center; text-align: center; min-width: 0; overflow-wrap: anywhere; }
+    .ai-wa {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--wa, #25d366); color: #fff; border-radius: 9px; padding: 8px 10px;
+      font-size: 13px; font-weight: 500;
+    }
+    .ai-fb {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #1877f2; color: #fff; border-radius: 9px; padding: 8px 10px;
+      font-size: 13px; font-weight: 500;
+    }
+    .ai-fb:hover { background: #0f66d6; }
+    .ai-edit {
+      border: none; background: #e8f4ec; color: var(--green-accent); border-radius: 9px;
+      padding: 8px 10px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .ai-edit:hover { background: #d8ecdf; }
+    .ai-pay {
+      border: none; background: #fef3c7; color: var(--gold-dark); border-radius: 9px;
+      padding: 8px 10px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .ai-pay:hover { background: #fbe8a6; }
+    .ai-del {
+      border: none; background: #fdecec; color: var(--danger); border-radius: 9px;
+      padding: 8px 10px; font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    }
+    .ai-del:hover { background: #f9d8d8; }
+
+    @media (max-width: 760px) {
+      .ai-controls { margin-left: 0; justify-items: stretch; }
+      .ai-actions { width: 100%; }
+      .nav-inner { flex-direction: column; }
+      .nav-left, .nav-right { width: 100%; justify-content: center; }
+      .nav-right { margin-left: 0; }
+      .toolbar-btns { margin-left: auto; margin-right: auto; justify-content: center; }
+      .footer .footer-inner { justify-content: center; text-align: center; }
+      .footer-inner .logo, .footer-inner p { margin: 0 auto; }
+    }
+
+    .empty-note { text-align: center; color: var(--muted); padding: 60px 20px; font-size: 16px; background: var(--card); border: 1px dashed var(--line); border-radius: var(--radius); }
+
+    /* สถิติเชิงลึก / ສະຖິຕິເລິກ */
+    .mini-card { margin-bottom: 14px; padding: 18px 20px; }
+    .mini-card h3 { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+    .cleared-item {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      background: linear-gradient(135deg, #f2faf4, #e7f6ec);
+      border: 1px solid #bde5cd; border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 10px;
+      box-shadow: 0 4px 14px rgba(14, 122, 60, .10);
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .cleared-item:last-child { margin-bottom: 0; }
+    .cleared-item:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(14, 122, 60, .16); }
+    .ci-avatar {
+      width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%;
+      background: linear-gradient(135deg, var(--green), var(--green-dark));
+      color: #fff; font-size: 20px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 10px rgba(14, 122, 60, .30);
+    }
+    .ci-main { min-width: 0; }
+    .ci-name { font-weight: 600; font-size: 15px; color: var(--ink); }
+    .ci-meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .ci-nums { margin-left: auto; text-align: right; }
+    .ci-profit { font-weight: 600; color: var(--green-accent); font-size: 14px; }
+    .ci-repay { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .cleared-empty { color: var(--muted); font-size: 14px; text-align: center; padding: 18px 0; }
+
+    .mini-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .mini { background: #f8fbf9; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+    .mini-num { font-size: clamp(16px, 4.2vw, 24px); font-weight: 600; color: var(--green-text); overflow-wrap: anywhere; line-height: 1.25; }
+    .mini-label { font-size: 12px; color: var(--muted); }
+
+    .range-row {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 12px 16px; margin-bottom: 14px; box-shadow: var(--shadow);
+    }
+    .range-label { font-weight: 600; font-size: 14px; color: var(--green-text); }
+    .range-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .range-pills button {
+      border: 1.5px solid var(--line); background: #fff; border-radius: 999px;
+      padding: 7px 14px; font-family: inherit; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer;
+      transition: all .15s ease;
+    }
+    .range-pills button:hover { border-color: var(--green); color: var(--green); }
+    .range-pills button.active { background: var(--green); border-color: var(--green); color: #fff; }
+    .range-custom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .range-custom input[type="date"] {
+      border: 1.5px solid var(--line); border-radius: 10px; padding: 7px 10px;
+      font-family: inherit; font-size: 14px; color: var(--ink); background: #fff;
+    }
+    .range-custom input[type="date"]:focus { outline: none; border-color: var(--green); }
+    .range-custom .btn { padding: 8px 16px; font-size: 13px; }
+
+    .charts-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding-bottom: 20px; }
+    .chart-card {
+      padding: 20px 22px;
+      background: linear-gradient(160deg, #fffdf6, #fdf4dd);
+      border: 1px solid #f0dcae; border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(180, 130, 20, .12);
+      min-width: 0;
+    }
+    .chart-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .chart-icon {
+      width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #fff; font-size: 21px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 12px rgba(217, 154, 0, .35);
+    }
+    .chart-card h3 { font-size: 16px; font-weight: 600; margin: 0; }
+    .chart-sub { font-size: 12.5px; color: var(--gold-dark); font-weight: 500; margin-top: 3px; }
+
+    .chart {
+      display: flex; align-items: flex-end; gap: 10px; height: 170px;
+      padding: 14px 16px 10px;
+      background: rgba(255, 255, 255, .72); border: 1px dashed #eeddb4; border-radius: 14px;
+      overflow-x: auto;
+    }
+    .bar-col { flex: 1 0 26px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 5px; min-width: 0; }
+    .bar-val { font-size: 11px; font-weight: 600; color: var(--gold-dark); white-space: nowrap; }
+    .bar {
+      width: 100%; max-width: 46px; min-height: 3px;
+      background: linear-gradient(180deg, #ffd24d, var(--gold-dark));
+      border-radius: 8px 8px 2px 2px; cursor: pointer;
+      transition: transform .15s ease, opacity .15s ease;
+    }
+    .bar.gold { background: linear-gradient(180deg, #ffd24d, var(--gold-dark)); }
+    .bar:hover { transform: scaleY(1.03); opacity: .85; }
+    .bar-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .chart-empty { display: flex; align-items: center; justify-content: center; height: 100%; width: 100%; color: var(--muted); font-size: 14px; }
+
+    @media (max-width: 900px) {
+      .charts-row { grid-template-columns: 1fr; }
+      .mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .mini:last-child { grid-column: 1 / -1; }
+    }
+
+    /* Modal เพิ่มลูกค้า / ຟອມເພີ່ມລູກຄ້າ */
+    .modal {
+      position: fixed; inset: 0; z-index: 400;
+      background: rgba(0, 0, 0, .6);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-box {
+      background: #fff; border-radius: 18px; width: 100%; max-width: 540px;
+      max-height: 92vh; overflow-y: auto; padding: 26px 28px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, .35);
+    }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .modal-head h3 { font-size: 20px; font-weight: 600; }
+    .modal-close {
+      border: none; background: #eef4f0; color: var(--muted); border-radius: 50%;
+      width: 36px; height: 36px; font-size: 16px; cursor: pointer;
+    }
+    .modal-close:hover { background: #e2ece5; color: var(--ink); }
+    #add-form, #pay-form { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+    .add-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    /* Modal หักลบเงิน / ຟອມຫັກລົບເງິນ */
+    #pay-form .field label { display: block; font-weight: 500; font-size: 14px; margin-bottom: 6px; }
+    #pay-form input, #pay-form select {
+      width: 100%; padding: 11px 13px; border: 1.5px solid var(--line); border-radius: 12px;
+      font-family: inherit; font-size: 14px; font-weight: 500; color: var(--ink); background: #fff;
+    }
+    #pay-form input:focus, #pay-form select:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 4px rgba(14,122,60,.12); }
+    #pay-form .field.invalid input { border-color: var(--danger); }
+    /* ຟອມຕັ້ງຄ່າລະຫັດຜ່ານ / ฟอร์มตั้งค่ารหัสผ่าน */
+    #pass-form { display: grid; gap: 14px; }
+    #pass-form .field label { display: block; font-weight: 500; font-size: 14px; margin-bottom: 6px; }
+    #pass-form .field .login-input { position: relative; }
+    #pass-form .field .login-ic {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 15px; opacity: .85; pointer-events: none;
+    }
+    #pass-form input {
+      width: 100%; padding: 11px 13px 11px 42px; border: 1.5px solid var(--line); border-radius: 12px;
+      font-family: inherit; font-size: 14px; font-weight: 500; color: var(--ink); background: #fff;
+    }
+    #pass-form input:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 4px rgba(14,122,60,.12); }
+    .pay-err { display: none; color: var(--danger); font-size: 12px; font-weight: 400; margin-top: 4px; }
+    .pay-err.show { display: block; }
+    .pay-summary { background: #f4f8f5; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.8; margin-bottom: 14px; }
+    .pay-preview { display: none; background: #fefce8; border: 1.5px dashed var(--gold); border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.8; }
+    .pay-preview.show { display: block; }
+    .pay-history { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 12px; }
+    .pay-history h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--green-text); }
+    .pay-history-list { display: grid; gap: 6px; }
+    .ph-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+    .ph-date { color: var(--muted); }
+    .ph-nums { text-align: right; }
+    .ph-nums b { color: var(--green-text); }
+    .ph-nums .ph-i { color: var(--gold-dark); }
+    .ph-nums .ph-p { color: var(--muted); }
+    .add-grid .field label, #add-form .field label { display: block; font-weight: 500; font-size: 14px; margin-bottom: 6px; }
+    #add-form input, #add-form select {
+      width: 100%; padding: 11px 14px; border: 1.5px solid var(--line); border-radius: 11px;
+      font-family: inherit; font-size: 15px; color: var(--ink); background: #fff;
+    }
+    #add-form input:focus, #add-form select:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 4px rgba(14,122,60,.12); }
+    #add-form .field.invalid input { border-color: var(--danger); }
+    #add-form .field .upload-box, .upload-box {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+      border: 2px dashed var(--green); border-radius: 14px;
+      background: linear-gradient(135deg, #eaf7ef, #d9f0e2);
+      padding: 18px 18px; transition: all .18s ease; text-align: center; width: 100%; box-sizing: border-box;
+    }
+    .upload-box:hover { background: linear-gradient(135deg, #dff3e7, #cdeade); border-color: var(--green-dark); transform: translateY(-1px); box-shadow: 0 10px 22px rgba(10,70,38,.18); }
+    .upload-icon {
+      width: 46px; height: 46px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--green), var(--green-dark)); border-radius: 50%; font-size: 22px;
+      color: #fff; box-shadow: 0 4px 10px rgba(14,122,60,.35);
+    }
+    .upload-text { font-weight: 600; color: var(--green-text); font-size: 15px; line-height: 1.5; }
+    .upload-text small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .upload-preview { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .up-item { position: relative; width: 86px; height: 86px; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); }
+    .up-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .up-remove {
+      position: absolute; top: 4px; right: 4px; border: none; cursor: pointer;
+      width: 24px; height: 24px; border-radius: 50%; line-height: 1;
+      background: rgba(0,0,0,.55); color: #fff; font-size: 11px;
+    }
+    .up-remove:hover { background: var(--danger); }
+    .upload-count { display: block; font-size: 12px; color: var(--muted); margin-top: 6px; text-align: right; }
+    .ai-docs { flex: 1 1 100%; }
+    .ai-docs:empty { display: none; }
+    .ai-thumbs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+    .ai-thumbs .ai-thumb { margin-top: 0; }
+    #add-form .error-msg { display: none; color: var(--danger); font-size: 12px; font-weight: 400; margin-top: 4px; }
+    #add-form .field.invalid .error-msg { display: block; }
+    #add-form .form-summary { margin-top: 2px; }
+    .form-summary { display: none; background: #fff7dd; border: 1px solid var(--gold); border-radius: 12px; padding: 12px 16px; font-size: 14px; }
+    .form-summary.show { display: block; }
+    .form-summary strong { color: var(--gold-dark); }
+    .add-actions { display: flex; gap: 10px; justify-content: center; margin-top: 4px; }
+    @media (max-width: 560px) { .add-grid { grid-template-columns: 1fr; } }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0, 0, 0, .82);
+      display: flex; align-items: center; justify-content: center; padding: 30px;
+    }
+    .lightbox img { max-width: 92%; max-height: 88%; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+    .lb-close {
+      position: absolute; top: 18px; right: 22px;
+      width: 42px; height: 42px; border: none; border-radius: 50%;
+      background: rgba(255,255,255,.15); color: #fff; font-size: 20px; cursor: pointer;
+    }
+    .lb-close:hover { background: rgba(255,255,255,.3); }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--green-deep); color: #fff; padding: 12px 22px; border-radius: 999px;
+      font-size: 14px; font-weight: 500; opacity: 0; transition: all .25s ease; z-index: 200;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25); pointer-events: none; max-width: 90vw;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.err { background: var(--danger); }
+
+    /* Footer */
+    .footer { background: var(--green-deep); color: #cfe6d8; padding: 26px 0; }
+    .footer-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+    .footer .logo { color: #fff; }
+    .footer p { font-size: 13px; }
+
+    /* ===== ໂໝດມືດ — ສີ hardcode ທັງໝົດ / โหมดมืด — สีตายตัวทั้งหมด ===== */
+    [data-theme="dark"] .navbar { background: rgba(12, 19, 16, .92); }
+    [data-theme="dark"] .logo-sub { background: #2a2410; }
+    [data-theme="dark"] .lang-switch { background: #1d2a23; }
+    [data-theme="dark"] .login-card input, [data-theme="dark"] .search-box input,
+    [data-theme="dark"] #pay-form input, [data-theme="dark"] #pay-form select,
+    [data-theme="dark"] #add-form input, [data-theme="dark"] #add-form select,
+    [data-theme="dark"] #pass-form input,
+    [data-theme="dark"] .range-custom input[type="date"], [data-theme="dark"] .range-pills button { background: #101813; }
+    [data-theme="dark"] .login-error { background: #33201e; border-color: #5c3531; }
+    [data-theme="dark"] .login-error.lock { background: #2b2512; border-color: #5c4a1a; }
+    [data-theme="dark"] .btn-ghost2 { background: #1d2a23; }
+    [data-theme="dark"] .btn-danger { background: #321d1d; border-color: #5a2f2f; }
+    [data-theme="dark"] .modal-box { background: var(--card); }
+    [data-theme="dark"] .modal-close { background: #1d2a23; }
+    [data-theme="dark"] .modal-close:hover { background: #27372f; }
+    [data-theme="dark"] .app-item[data-done="true"] {
+      background: linear-gradient(135deg, #12271a, #0e1f16);
+      border-color: #1f5c38;
+      box-shadow: 0 0 0 3px rgba(34, 162, 97, .10), var(--shadow);
+    }
+    [data-theme="dark"] .app-item[data-done="false"] {
+      background: linear-gradient(135deg, #241f10, #1c1a0e);
+      border-color: #5c4a1a;
+      box-shadow: 0 0 0 3px rgba(245, 179, 1, .08), var(--shadow);
+    }
+    [data-theme="dark"] .badge-cleared { background: #12301f; border-color: #1f5c38; }
+    [data-theme="dark"] .badge-paying { background: #2b2412; border-color: #5c4a1a; }
+    [data-theme="dark"] .ai-edit { background: #153022; }
+    [data-theme="dark"] .ai-edit:hover { background: #1a3a2a; }
+    [data-theme="dark"] .ai-pay { background: #2e2610; }
+    [data-theme="dark"] .ai-pay:hover { background: #3a2f14; }
+    [data-theme="dark"] .ai-del { background: #331d1d; }
+    [data-theme="dark"] .ai-del:hover { background: #412525; }
+    [data-theme="dark"] .mini { background: #131d17; }
+    [data-theme="dark"] .cleared-item {
+      background: linear-gradient(135deg, #12271a, #0e1f16);
+      border-color: #1f5c38;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, .35);
+    }
+    [data-theme="dark"] .cleared-item:hover { box-shadow: 0 8px 20px rgba(0, 0, 0, .5); }
+    [data-theme="dark"] .chart-card {
+      background: linear-gradient(160deg, #1d1a10, #241f12);
+      border-color: #4a3d1a;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+    }
+    [data-theme="dark"] .chart { background: rgba(18, 25, 21, .7); border-color: #4a3d1a; }
+    [data-theme="dark"] #add-form .field .upload-box, [data-theme="dark"] .upload-box { background: linear-gradient(135deg, #14301f, #0f2618); }
+    [data-theme="dark"] #add-form .field .upload-box:hover, [data-theme="dark"] .upload-box:hover { background: linear-gradient(135deg, #183823, #12301c); box-shadow: 0 10px 22px rgba(0, 0, 0, .4); }
+    [data-theme="dark"] .pay-summary { background: #131d17; }
+    [data-theme="dark"] .pay-preview { background: #241f10; }
+    [data-theme="dark"] .ph-item { background: #101813; border-color: #223129; }
+    [data-theme="dark"] .pay-history { border-color: #223129; }
+    [data-theme="dark"] .form-summary { background: #2a2412; }
+    [data-theme="dark"] .up-item { border-color: var(--line); }
+  </style>
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="container nav-inner">
+      <div class="nav-left">
+        <a href="admin.html" class="logo"><span class="logo-icon">⚡</span> MoneyFast <span class="logo-sub" data-i18n="brandTag">เงินด่วน</span></a>
+        <button type="button" class="theme-btn" id="theme-btn" aria-label="ธีม">🌙</button>
+        <div class="lang-switch" role="group" aria-label="ภาษา">
+          <button type="button" class="lang-btn" id="lang-th">ไทย</button>
+          <button type="button" class="lang-btn" id="lang-lo">ລາວ</button>
+        </div>
+      </div>
+      <div class="nav-right">
+        <button type="button" class="btn btn-ghost2" id="pass-btn" hidden data-i18n="passBtn">⚙️ ตั้งค่ารหัสผ่าน</button>
+        <button type="button" class="btn btn-ghost2" id="logout-btn" hidden data-i18n="logoutBtn">ออกจากระบบ</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+
+      <!-- หน้าเข้าสู่ระบบ / ໜ້າເຂົ້າສູ່ລະບົບ -->
+      <div id="login-screen">
+        <div class="card login-card">
+          <div class="login-logo"><span class="logo-icon">⚡</span> MoneyFast <span class="logo-sub" data-i18n="brandTag">เงินด่วน</span></div>
+          <h2 data-i18n="loginTitle">🔐 เข้าสู่ระบบแอดมิน</h2>
+          <p class="login-sub" data-i18n="loginSub">ยินดีต้อนรับกลับ! กรอกข้อมูลเพื่อจัดการคำขอกู้</p>
+          <form id="login-form" novalidate>
+            <div class="field">
+              <label for="login-user" data-i18n="loginUser">ชื่อผู้ใช้ (Username)</label>
+              <div class="login-input">
+                <span class="login-ic">👤</span>
+                <input type="text" id="login-user" autocomplete="username" placeholder="admin">
+              </div>
+            </div>
+            <div class="field">
+              <label for="login-pass" data-i18n="loginPass">รหัสผ่าน (Password)</label>
+              <div class="login-input">
+                <span class="login-ic">🔒</span>
+                <input type="password" id="login-pass" autocomplete="current-password" placeholder="••••••">
+              </div>
+            </div>
+            <div class="login-error" id="login-error"></div>
+            <button type="submit" class="btn btn-green btn-block btn-lg" data-i18n="loginBtn">เข้าสู่ระบบ</button>
+          </form>
+
+        </div>
+      </div>
+
+      <!-- ส่วนจัดการแอดมิน / ສ່ວນຈັດການແອດມິນ -->
+      <div id="admin-app" hidden>
+
+      <div class="page-head">
+        <h1 data-i18n="adminTitle">📊 แผงควบคุมแอดมิน</h1>
+        <p data-i18n="adminSub">จัดการคำขอกู้ทั้งหมด เปลี่ยนสถานะ และค้นหาลูกค้า</p>
+        <p class="sync-note" id="sync-note" hidden></p>
+      </div>
+
+      <!-- สถิติ -->
+      <div class="stats">
+        <div class="stat approved">
+          <div class="st-num" id="st-count">0</div>
+          <div class="st-label" data-i18n="stCount">ลูกค้าทั้งหมด</div>
+        </div>
+        <div class="stat approved">
+          <div class="st-num" id="st-loaned">—</div>
+          <div class="st-label" data-i18n="stLoaned">เงินที่ให้กู้</div>
+        </div>
+        <div class="stat approved">
+          <div class="st-num" id="st-repay">—</div>
+          <div class="st-label" data-i18n="stRepay">ยอดที่คืน</div>
+        </div>
+        <div class="stat profit">
+          <div class="st-num" id="st-profit">—</div>
+          <div class="st-label" data-i18n="stProfit">กำไร (เก็บได้จริง)</div>
+        </div>
+      </div>
+
+      <!-- สถิติเชิงลึก -->
+      <div class="card mini-card">
+        <h3 data-i18n="statsTitle">📈 สถิติ</h3>
+        <div class="mini-grid">
+          <div class="mini">
+            <div class="mini-num" id="st-new7">0</div>
+            <div class="mini-label" data-i18n="stNew7">ลูกค้าใหม่ (7 วัน)</div>
+          </div>
+          <div class="mini">
+            <div class="mini-num" id="st-new30">0</div>
+            <div class="mini-label" data-i18n="stNew30">ลูกค้าใหม่ (30 วัน)</div>
+          </div>
+          <div class="mini">
+            <div class="mini-num" id="st-avg">—</div>
+            <div class="mini-label" data-i18n="stAvg">ยอดกู้เฉลี่ย/คำขอ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- เลือกช่วงเวลา -->
+      <div class="range-row">
+        <span class="range-label" data-i18n="rangeTitle">ช่วงเวลา</span>
+        <div class="range-pills" id="range-pills">
+          <button type="button" class="active" data-days="7" data-i18n="range7">7 วัน</button>
+          <button type="button" data-days="30" data-i18n="range30">30 วัน</button>
+          <button type="button" data-days="90" data-i18n="range90">90 วัน</button>
+          <button type="button" data-days="custom" data-i18n="rangeCustom">กำหนดเอง</button>
+        </div>
+        <div class="range-custom" id="range-custom" hidden>
+          <input type="date" id="range-from" aria-label="จาก">
+          <span data-i18n="rangeTo">ถึง</span>
+          <input type="date" id="range-to" aria-label="ถึง">
+          <button type="button" class="btn btn-green" id="range-apply" data-i18n="rangeApply">ใช้ช่วงนี้</button>
+        </div>
+      </div>
+
+      <!-- กราฟกำไรจากยอดอนุมัติจริง -->
+      <div class="charts-row">
+        <div class="card chart-card">
+          <div class="chart-head">
+            <div class="chart-icon">💰</div>
+            <div>
+              <h3 data-i18n="chartApproved">กำไรจริงรายวัน (จากยอดที่เก็บได้)</h3>
+              <div class="chart-sub" id="profit-total"></div>
+            </div>
+          </div>
+          <div class="chart" id="profit-chart"></div>
+        </div>
+      </div>
+
+      <!-- เพิ่งเคลียร์บิลล่าสุด -->
+      <div class="card mini-card" id="cleared-card">
+        <h3 data-i18n="clearedTitle">✅ เพิ่งเคลียร์บิลล่าสุด</h3>
+        <div class="cleared-list" id="cleared-list"></div>
+      </div>
+
+      <!-- ค้นหา + กรอง -->
+      <div class="controls">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="search" id="search-input" data-i18n-ph="searchPh" placeholder="ค้นหาด้วยเบอร์โทร หรือชื่อลูกค้า...">
+        </div>
+        <div class="toolbar-btns">
+          <button type="button" class="btn btn-green" id="add-btn" data-i18n="addBtn">➕ เพิ่มลูกค้า</button>
+          <button type="button" class="btn btn-ghost2" id="export-btn" data-i18n="exportBtn">📥 ส่งออกรายงาน CSV</button>
+        </div>
+      </div>
+
+      <!-- รายการคำขอ -->
+      <div class="app-list" id="app-list"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="logo"><span class="logo-icon">⚡</span> MoneyFast <span class="logo-sub" data-i18n="brandTag">เงินด่วน</span></div>
+      <p>© <span id="year"></span> MoneyFast — <span data-i18n="footerNote">ระบบตัวอย่างสำหรับการพัฒนาเว็บไซต์</span></p>
+    </div>
+  </footer>
+
+  <!-- ฟอร์มเพิ่มลูกค้า / ຟອມເພີ່ມລູກຄ້າ -->
+  <div class="modal" id="add-modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 id="add-title">➕ เพิ่มข้อมูลลูกค้า</h3>
+        <button type="button" class="modal-close" id="add-close" aria-label="ปิด">✕</button>
+      </div>
+      <form id="add-form" novalidate>
+        <div class="add-grid">
+          <div class="field">
+            <label for="a-first" data-i18n-html="lblFirst">ชื่อ <span class="req">*</span></label>
+            <input type="text" id="a-first" name="a-first" autocomplete="off">
+            <small class="error-msg" data-for="a-first"></small>
+          </div>
+          <div class="field">
+            <label for="a-last" data-i18n-html="lblLast">นามสกุล <span class="req">*</span></label>
+            <input type="text" id="a-last" name="a-last" autocomplete="off">
+            <small class="error-msg" data-for="a-last"></small>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="a-phone" data-i18n-html="lblPhone">เบอร์ WhatsApp <span class="req">*</span></label>
+          <input type="tel" id="a-phone" name="a-phone" inputmode="numeric" autocomplete="off" placeholder="0812345678 / 02012345678">
+          <small class="error-msg" data-for="a-phone"></small>
+        </div>
+
+        <div class="field">
+          <label for="a-fb" data-i18n="lblFb">Facebook (โปรไฟล์/ชื่อผู้ใช้)</label>
+          <input type="text" id="a-fb" name="a-fb" autocomplete="off" data-i18n-ph="fbPh" placeholder="ชื่อผู้ใช้หรือลิงก์ Facebook">
+        </div>
+
+        <div class="field">
+          <label for="a-house" data-i18n-html="lblHouse">รูปทะเบียนบ้าน (ไม่บังคับ)</label>
+          <label class="upload-box" id="a-upload-box" for="a-house">
+            <input type="file" id="a-house" name="a-house" accept="image/*" multiple hidden>
+            <span class="upload-icon">📷</span>
+            <span class="upload-text" data-i18n-html="addUploadText">เพิ่มรูปทะเบียนบ้าน<br><small>เลือกได้หลายรูป สูงสุด 10 รูป · JPG / PNG ไม่เกิน 5 MB ต่อรูป</small></span>
+          </label>
+          <div class="upload-preview" id="a-upload-preview" hidden></div>
+          <small class="upload-count" id="a-upload-count"></small>
+          <small class="error-msg" data-for="a-house"></small>
+        </div>
+
+        <div class="field">
+          <label for="a-amount" data-i18n-html="lblAmount">ยอดที่ต้องการกู้ (กีบ) <span class="req">*</span></label>
+          <input type="number" id="a-amount" name="a-amount" min="100000" max="500000000" step="100000" inputmode="numeric" placeholder="2000000">
+          <small class="error-msg" data-for="a-amount"></small>
+        </div>
+
+        <div class="form-summary" id="a-summary"></div>
+
+        <div class="add-actions">
+          <button type="button" class="btn btn-ghost2" id="a-cancel" data-i18n="addCancel">ยกเลิก</button>
+          <button type="submit" class="btn btn-green" id="a-save-btn">บันทึกลูกค้า</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ฟอร์มหักลบเงิน / ຟອມຫັກລົບເງິນ -->
+  <div class="modal" id="pay-modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 data-i18n="payTitle">💰 หักลบเงิน</h3>
+        <button type="button" class="modal-close" id="pay-close" aria-label="ปิด">✕</button>
+      </div>
+      <div class="pay-summary" id="pay-summary"></div>
+      <form id="pay-form" novalidate>
+        <div class="field">
+          <label for="pay-type" data-i18n="payType">เลือกการชำระ</label>
+          <select id="pay-type">
+            <option value="interest" data-i18n="payTypeInterest">คืนดอก (ดอกเบี้ย)</option>
+            <option value="custom" data-i18n="payTypeCustom">คืนระบุจำนวนเงิน</option>
+            <option value="all" data-i18n="payTypeAll">คืนทั้งหมด</option>
+          </select>
+        </div>
+        <div class="field" id="pay-amount-field">
+          <label for="pay-amount" data-i18n="payAmount">จำนวนเงินที่รับชำระ (กีบ)</label>
+          <input type="number" id="pay-amount" min="0" step="100000" inputmode="numeric" placeholder="500000">
+          <small class="pay-err" id="pay-err"></small>
+        </div>
+        <div class="pay-preview" id="pay-preview"></div>
+        <div class="pay-history" id="pay-history" hidden>
+          <h4 data-i18n="payHistory">ประวัติการชำระ</h4>
+          <div id="pay-history-list"></div>
+        </div>
+        <div class="add-actions">
+          <button type="button" class="btn btn-ghost2" id="pay-cancel" data-i18n="addCancel">ยกเลิก</button>
+          <button type="submit" class="btn btn-green" data-i18n="paySave">บันทึกการชำระ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ເຂົ້າສູ່ລະບົບສຳເລັດ / เข้าสู่ระบบสำเร็จ -->
+  <div class="modal" id="login-ok-modal" hidden>
+    <div class="modal-box modal-center">
+      <div class="login-ok-icon">✅</div>
+      <h3 data-i18n="loginOkTitle">เข้าสู่ระบบสำเร็จ</h3>
+      <p class="del-msg" data-i18n="loginOkMsg">ยินดีต้อนรับกลับเข้าสู่ระบบแอดมิน</p>
+      <div class="add-actions modal-actions-center">
+        <button type="button" class="btn btn-green" id="login-ok-btn" data-i18n="loginOkBtn">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ຢືນຢັນການລຶບ / ยืนยันการลบ -->
+  <div class="modal" id="del-modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 data-i18n="delTitle">🗑 ยืนยันการลบ</h3>
+        <button type="button" class="modal-close" id="del-close" aria-label="ปิด">✕</button>
+      </div>
+      <p class="del-msg" id="del-msg"></p>
+      <div class="add-actions">
+        <button type="button" class="btn btn-ghost2" id="del-cancel" data-i18n="delCancel">ยกเลิก</button>
+        <button type="button" class="btn btn-danger" id="del-confirm" data-i18n="delConfirm">🗑 ลบ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ຢືນຢັນການບັນທຶກ / ยืนยันการบันทึก -->
+  <div class="modal" id="save-modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 data-i18n="saveTitle">💾 ยืนยันการบันทึก</h3>
+        <button type="button" class="modal-close" id="save-close" aria-label="ปิด">✕</button>
+      </div>
+      <p class="del-msg" id="save-msg"></p>
+      <div class="add-actions">
+        <button type="button" class="btn btn-ghost2" id="save-cancel" data-i18n="delCancel">ยกเลิก</button>
+        <button type="button" class="btn btn-green" id="save-confirm" data-i18n="saveConfirm">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ຕັ້ງຄ່າລະຫັດຜ່ານ / ตั้งค่ารหัสผ่าน -->
+  <div class="modal" id="pass-modal" hidden>
+    <div class="modal-box">
+      <div class="modal-head">
+        <h3 data-i18n="passTitle">⚙️ ตั้งค่ารหัสผ่าน</h3>
+        <button type="button" class="modal-close" id="pass-close" aria-label="ปิด">✕</button>
+      </div>
+      <form id="pass-form" novalidate>
+        <div class="field">
+          <label for="pass-current" data-i18n="passCurrent">รหัสผ่านปัจจุบัน</label>
+          <div class="login-input">
+            <span class="login-ic">🔑</span>
+            <input type="password" id="pass-current" autocomplete="current-password" placeholder="••••••">
+          </div>
+        </div>
+        <div class="field">
+          <label for="pass-new" data-i18n="passNew">รหัสผ่านใหม่ (อย่างน้อย 4 ตัวอักษร)</label>
+          <div class="login-input">
+            <span class="login-ic">🔒</span>
+            <input type="password" id="pass-new" autocomplete="new-password" placeholder="••••••">
+          </div>
+        </div>
+        <div class="field">
+          <label for="pass-confirm" data-i18n="passConfirm">ยืนยันรหัสผ่านใหม่</label>
+          <div class="login-input">
+            <span class="login-ic">✅</span>
+            <input type="password" id="pass-confirm" autocomplete="new-password" placeholder="••••••">
+          </div>
+        </div>
+        <div class="login-error" id="pass-err"></div>
+        <div class="add-actions modal-actions-center">
+          <button type="button" class="btn btn-ghost2" id="pass-cancel" data-i18n="addCancel">ยกเลิก</button>
+          <button type="submit" class="btn btn-green" data-i18n="passSave">💾 เปลี่ยนรหัสผ่าน</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightbox" hidden>
+    <button type="button" class="lb-close" id="lb-close" aria-label="ปิด">✕</button>
+    <img id="lb-img" alt="">
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ===== MoneyFast Admin — ไทย / ລາວ ===== */
+
+    const WEEKLY_RATE = 0.20;
+    const MIN_AMOUNT = 100000;
+    const MAX_AMOUNT = 500000000;
+    const STORE_KEY = 'moneyfast_applications';
+    const LANG_KEY = 'moneyfast_lang';
+    const THEME_KEY = 'moneyfast_theme';
+
+    /* ---------- Firebase mode (โหมด Firebase — หลัง deploy ขึ้น Hosting + ใส่ FB_CONFIG จริง) ---------- */
+    const FB_CFG = window.FB_CONFIG || {};
+    const FB_MODE = !!(FB_CFG.apiKey && FB_CFG.apiKey !== 'YOUR_API_KEY' && typeof firebase !== 'undefined');
+    if (FB_MODE) {
+      try { firebase.initializeApp(FB_CFG); } catch (e) { /* ignore */ }
+    }
+
+    /* RTDB เก็บ array เป็น object { "0": ..., "1": ... } — แปลงกลับเป็น array */
+    function fbToArray(val) {
+      if (val == null) return [];
+      if (Array.isArray(val)) return val;
+      if (typeof val === 'object') {
+        const keys = Object.keys(val).sort((a, b) => {
+          const na = Number(a);
+          const nb = Number(b);
+          if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
+          return a.localeCompare(b);
+        });
+        return keys.map((k) => val[k]);
+      }
+      return [];
+    }
+    function fbAuthError(err) {
+      const c = (err && err.code) || '';
+      if (c === 'auth/invalid-email') return t('fbErrEmail');
+      if (c === 'auth/wrong-password' || c === 'auth/user-not-found' || c === 'auth/invalid-credential' || c === 'auth/invalid-login-credentials') return t('fbErrWrong');
+      if (c === 'auth/too-many-requests') return t('fbErrMany');
+      return t('fbErrOther');
+    }
+
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+
+    /* ---------- i18n ---------- */
+
+    const I18N = {
+      th: {
+        title: 'Admin — MoneyFast เงินด่วน',
+        brandTag: 'เงินด่วน',
+        logoutBtn: 'ออกจากระบบ',
+        loginTitle: '🔐 เข้าสู่ระบบแอดมิน',
+        loginSub: 'ยินดีต้อนรับกลับ! กรอกข้อมูลเพื่อจัดการคำขอกู้',
+        loginUser: 'ชื่อผู้ใช้ (Username)',
+        loginPass: 'รหัสผ่าน (Password)',
+        loginBtn: 'เข้าสู่ระบบ',
+        loginErr: '⚠️ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+        fbEmail: 'อีเมล (Email)',
+        fbErrWrong: '⚠️ อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+        fbErrEmail: '⚠️ รูปแบบอีเมลไม่ถูกต้อง',
+        fbErrMany: '⚠️ พยายามมากเกินไป กรุณารอสักครู่แล้วลองใหม่',
+        fbErrOther: '⚠️ เข้าสู่ระบบล้มเหลว กรุณาลองอีกครั้ง',
+        loginOkTitle: '✅ เข้าสู่ระบบสำเร็จ',
+        loginOkMsg: 'ยินดีต้อนรับกลับเข้าสู่ระบบแอดมิน',
+        loginOkBtn: 'ตกลง',
+        passBtn: '⚙️ ตั้งค่ารหัสผ่าน',
+        passTitle: '⚙️ ตั้งค่ารหัสผ่าน',
+        passCurrent: 'รหัสผ่านปัจจุบัน',
+        passNew: 'รหัสผ่านใหม่ (อย่างน้อย 4 ตัวอักษร)',
+        passConfirm: 'ยืนยันรหัสผ่านใหม่',
+        passSave: '💾 เปลี่ยนรหัสผ่าน',
+        passErrCurrent: '⚠️ รหัสผ่านปัจจุบันไม่ถูกต้อง',
+        passErrShort: '⚠️ รหัสผ่านใหม่ต้องมีอย่างน้อย 4 ตัวอักษร',
+        passErrMatch: '⚠️ ยืนยันรหัสผ่านไม่ตรงกัน',
+        passSaved: '✅ เปลี่ยนรหัสผ่านแล้ว',
+        themeDark: 'สลับเป็นโหมดมืด',
+        themeLight: 'สลับเป็นโหมดสว่าง',
+        failLeft: 'เหลือความพยายาม {n} ครั้ง',
+        lockMsg: '🔒 ล็อกชั่วคราว — พยายามผิดครบ 5 ครั้ง กรุณารอ {time}',
+        lockMin: 'นาที',
+        lockSec: 'วินาที',
+        adminTitle: '📊 แผงควบคุมแอดมิน',
+        adminSub: 'จัดการข้อมูลลูกค้า การชำระ และค้นหาลูกค้า',
+        stAll: 'คำขอทั้งหมด',
+        stSum: 'วงเงินรวมที่ขอ',
+        stCount: 'ลูกค้าทั้งหมด',
+        stLoaned: 'เงินที่ให้กู้',
+        stRepay: 'ยอดที่คืน',
+        stProfit: 'กำไร (เก็บได้จริง)',
+        statsTitle: '📈 สถิติ',
+        stNew7: 'ลูกค้าใหม่ (7 วัน)',
+        stNew30: 'ลูกค้าใหม่ (30 วัน)',
+        stAvg: 'ยอดกู้เฉลี่ย/คำขอ',
+        chartApproved: 'กำไรจริงรายวัน (จากยอดที่เก็บได้)',
+        chartTotal: 'รวม {range} · {total}',
+        days: 'วัน',
+        clearedTitle: '✅ เพิ่งเคลียร์บิลล่าสุด',
+        clearedEmpty: 'ยังไม่มีลูกค้าที่ชำระครบ',
+        rangeTitle: 'ช่วงเวลา',
+        range7: '7 วัน',
+        range30: '30 วัน',
+        range90: '90 วัน',
+        rangeCustom: 'กำหนดเอง',
+        rangeTo: 'ถึง',
+        rangeApply: 'ใช้ช่วงนี้',
+        rangeErr: '⚠️ วันที่ไม่ถูกต้อง (จากต้องไม่เกินถึง)',
+        rangeApplied: '✅ ใช้ช่วงวันที่แล้ว',
+        chartEmpty: 'ยังไม่มีข้อมูล',
+        decidedUnit: 'รายการ',
+        searchPh: 'ค้นหาด้วยเบอร์โทร หรือชื่อลูกค้า...',
+        exportBtn: '📥 ส่งออกรายงาน CSV',
+        expReportTitle: 'รายงานสรุปสถิติรายสัปดาห์',
+        expGenerated: 'วันที่สร้างรายงาน',
+        expWeek: 'สัปดาห์เริ่ม',
+        expReq: 'ยื่น (ราย)',
+        expReqAmt: 'วงเงินยื่น',
+        expCust: 'ลูกค้า (คน)',
+        expDone: '✅ ดาวน์โหลดรายงานแล้ว',
+        addBtn: '➕ เพิ่มลูกค้า',
+        addTitle: '➕ เพิ่มข้อมูลลูกค้า',
+        addCancel: 'ยกเลิก',
+        addSave: 'บันทึกลูกค้า',
+        addSaved: '✅ บันทึกลูกค้าแล้ว',
+        lblFirst: 'ชื่อ <span class="req">*</span>',
+        lblLast: 'นามสกุล <span class="req">*</span>',
+        lblPhone: 'เบอร์ WhatsApp <span class="req">*</span>',
+        lblFb: 'Facebook (โปรไฟล์/ชื่อผู้ใช้)',
+        fbPh: 'ชื่อผู้ใช้หรือลิงก์ Facebook',
+        fbBtn: 'Facebook',
+        lblHouse: 'รูปทะเบียนบ้าน (ไม่บังคับ · สูงสุด 10 รูป)',
+        addUploadText: 'เพิ่มรูปทะเบียนบ้าน<br><small>เลือกได้หลายรูป สูงสุด 10 รูป · JPG / PNG ไม่เกิน 5 MB ต่อรูป</small>',
+        errImgType: 'กรุณาเลือกไฟล์รูปภาพ (JPG / PNG)',
+        errImgSize: 'ไฟล์ใหญ่เกินไป — ต้องไม่เกิน 5 MB',
+        errImgMax: 'เพิ่มรูปได้สูงสุด 10 รูป',
+        imgCount: '{n}/10 รูป',
+        imgs: '{n} รูป',
+        uploading: 'กำลังบันทึก... ⏳',
+        lblAmount: 'ยอดที่ต้องการกู้ (กีบ) <span class="req">*</span>',
+        errFirst: 'กรุณากรอกชื่อจริง',
+        errLast: 'กรุณากรอกนามสกุล',
+        errPhone: 'กรอกเบอร์โทรศัพท์ เช่น 0812345678 (ไทย) หรือ 02012345678 (ลาว)',
+        errAmount: 'ยอดกู้ต้องอยู่ระหว่าง {min} – {max}',
+        formSummaryHtml: 'ยอดกู้ <strong>{principal}</strong><br>ดอกเบี้ย <strong>20% ต่อสัปดาห์</strong> จากยอดต้นที่ค้างอยู่<br>ยอดค้างจะเพิ่มทุกสัปดาห์ที่ยังชำระไม่ครบ',
+        emptySearch: 'ไม่พบคำขอกู้ที่ตรงกับการค้นหา',
+        emptyAll: 'ยังไม่มีข้อมูลลูกค้าในระบบ กด "➕ เพิ่มลูกค้า" เพื่อเพิ่มลูกค้าคนแรก',
+        waBtn: 'WhatsApp',
+        editBtn: 'แก้ไข',
+        editAria: 'แก้ไขข้อมูลนี้',
+        delBtn: 'ลบ',
+        delAria: 'ลบรายการนี้',
+        addTitleEdit: '✏️ แก้ไขข้อมูลลูกค้า',
+        addSaveEdit: 'บันทึกการแก้ไข',
+        addSavedEdit: '✅ แก้ไขข้อมูลลูกค้าแล้ว',
+        profitLabel: 'กำไร {profit}',
+        repayLabel: 'ยอดที่คืน {repay}',
+        payBtn: 'หักลบเงิน',
+        payAria: 'หักลบเงินชำระของลูกค้ารายนี้',
+        payTitle: '💰 หักลบเงิน',
+        payType: 'เลือกการชำระ',
+        payTypeInterest: 'คืนดอก (ดอกเบี้ย)',
+        payTypeCustom: 'คืนระบุจำนวนเงิน',
+        payTypeAll: 'คืนทั้งหมด',
+        payAmount: 'จำนวนเงินที่รับชำระ (กีบ)',
+        paySave: 'บันทึกการชำระ',
+        paySaved: '✅ บันทึกการชำระแล้ว',
+        offlineMode: 'เซิร์ฟเวอร์ไม่พร้อมใช้งาน — เปลี่ยนเป็นโหมดเครื่องเดียว (บันทึกในเครื่องนี้)',
+        syncOnline: '🟢 เชื่อมต่อเซิร์ฟเวอร์ — ข้อมูลซิงค์ข้ามเครื่องอัตโนมัติ',
+        syncOffline: '🔴 โหมดเครื่องเดียว — ข้อมูลบันทึกเฉพาะเครื่องนี้ (เซิร์ฟเวอร์ออฟไลน์)',
+        payErrAmount: 'กรอกจำนวนเงินที่รับชำระ (มากกว่า 0)',
+        payErrOver: 'เกินยอดคงเหลือของส่วนนี้ ({max})',
+        payErrAllShort: '⚠️ คืนทั้งหมดต้องชำระครบยอดที่ต้องคืน ({total})',
+        payErrZero: 'ยอดส่วนนี้ชำระครบแล้ว',
+        paidLabel: 'จ่ายแล้ว {paid} · ค้างชำระ {rem}',
+        paidFull: 'ชำระครบแล้ว',
+        clearedBadge: '✅ ชำระครบ · กำไรนับแล้ว',
+        payingBadge: '⏳ กำลังชำระหนี้',
+        paySumHtml: 'ต้นค้าง <strong>{principal}</strong> · ดอกค้าง <strong>{interest}</strong><br>ค้างชำระรวม <strong>{total}</strong> · จ่ายแล้ว <strong>{paid}</strong>',
+        payPrevHtml: 'จะชำระ <strong>{amount}</strong> ({type})<br>เหลือ {typeLabel}: <strong>{remType}</strong> · ค้างชำระรวม <strong>{remTotal}</strong>',
+        payPrevAllHtml: 'จะชำระ <strong>{amount}</strong> ({type})<br>เหลือค้างชำระรวม: <strong>{remTotal}</strong>',
+        payPrevCustomHtml: 'จะชำระ <strong>{amount}</strong> ({type})<br>หักดอก <strong>{iPart}</strong> · หักต้น <strong>{pPart}</strong><br>เหลือค้างชำระรวม: <strong>{remTotal}</strong>',
+        payHistory: 'ประวัติการชำระ',
+        payHistItemHtml: '<div class="ph-item"><span class="ph-date">🗓 {date}</span><span class="ph-nums"><b>💵 {amount}</b><br><span class="ph-i">ดอก {iPart}</span> · <span class="ph-p">ต้น {pPart}</span></span></div>',
+        delTitle: '🗑 ยืนยันการลบ',
+        delMsgHtml: 'ต้องการลบ <strong>{name}</strong> ออกจากระบบหรือไม่?<br>การลบนี้ไม่สามารถย้อนกลับได้',
+        delCancel: 'ยกเลิก',
+        delConfirm: '🗑 ลบ',
+        saveTitle: '💾 ยืนยันการบันทึก',
+        saveMsgHtml: 'ต้องการบันทึกข้อมูลของ <strong>{name}</strong> หรือไม่?<br>ยอดกู้ <strong>{amount}</strong> · ดอกเบี้ย 20% ต่อสัปดาห์จะเริ่มทบตั้งแต่วันนี้',
+        saveConfirm: '💾 บันทึก',
+        toastDeleted: '🗑 ลบรายการแล้ว',
+        errSave: '⚠️ บันทึกไม่สำเร็จ — พื้นที่จัดเก็บเต็ม ลองลบรูปบางส่วนแล้วลองใหม่',
+        footerNote: 'เงินด่วน มันนี่ฟาส',
+        kip: 'กีบ',
+        doc: 'เอกสาร',
+        itemHtml:
+          '<div class="app-item"{doneAttr}>' +
+          '<div class="ai-main">' +
+          '<div class="ai-name">{first} {last}{clearedBadge}{payingBadge}</div>' +
+          '<div class="ai-meta"><span class="ai-ic">📱</span><span class="ai-txt">{phone}<span class="ai-dot"> · </span>🗓 {time}</span></div>' +
+          '</div>' +
+          '<div class="ai-money">' +
+          '<div class="ai-amount">กู้ {amount}</div>' +
+          '<div class="ai-line">📈 ดอกค้าง {interestDue}</div>' +
+          '<div class="ai-line ai-due">💼 ค้างชำระรวม {due}</div>' +
+          '<div class="ai-line ai-profit">💰 กำไร {profit}</div>{paidLine}</div>' +
+          '<div class="ai-docs">{thumb}</div>' +
+          '<div class="ai-controls">' +
+          '<div class="ai-actions">' +
+          '<button type="button" class="ai-pay" data-id="{id}" aria-label="{payAria}">💰 {payBtn}</button>' +
+          '<button type="button" class="ai-edit" data-id="{id}" aria-label="{editAria}">✏️ {editBtn}</button>' +
+          '<a class="ai-wa" href="{wa}" target="_blank" rel="noopener">💬 {waBtn}</a>' +
+          '{fbBtn}' +
+          '{delBtn}' +
+          '</div></div></div>',
+      },
+      lo: {
+        title: 'Admin — MoneyFast ເງິນດ່ວນ',
+        brandTag: 'ເງິນດ່ວນ',
+        logoutBtn: 'ອອກຈາກລະບົບ',
+        loginTitle: '🔐 ເຂົ້າສູ່ລະບົບແອດມິນ',
+        loginSub: 'ຍິນດີຕ້ອນຮັບກັບມາ! ຕື່ມຂໍ້ມູນເພື່ອຈັດການຄຳຂໍກູ້',
+        loginUser: 'ຊື່ຜູ້ໃຊ້ (Username)',
+        loginPass: 'ລະຫັດຜ່ານ (Password)',
+        loginBtn: 'ເຂົ້າສູ່ລະບົບ',
+        loginErr: '⚠️ ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ',
+        fbEmail: 'ອີເມວ (Email)',
+        fbErrWrong: '⚠️ ອີເມວ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ',
+        fbErrEmail: '⚠️ ຮູບແບບອີເມວບໍ່ຖືກຕ້ອງ',
+        fbErrMany: '⚠️ ພະຍາຍາມຫຼາຍເກີນໄປ ກະລຸນາລໍຖ້າສັກຄູ່ແລ້ວລອງໃໝ່',
+        fbErrOther: '⚠️ ເຂົ້າສູ່ລະບົບລົ້ມເຫຼວ ກະລຸນາລອງອີກຄັ້ງ',
+        loginOkTitle: '✅ ເຂົ້າສູ່ລະບົບສຳເລັດ',
+        loginOkMsg: 'ຍິນດີຕ້ອນຮັບກັບມາ ສູ່ລະບົບແອດມິນ',
+        loginOkBtn: 'ຕົກລົງ',
+        passBtn: '⚙️ ຕັ້ງຄ່າລະຫັດຜ່ານ',
+        passTitle: '⚙️ ຕັ້ງຄ່າລະຫັດຜ່ານ',
+        passCurrent: 'ລະຫັດຜ່ານປັດຈຸບັນ',
+        passNew: 'ລະຫັດຜ່ານໃໝ່ (ຢ່າງໜ້ອຍ 4 ຕົວອັກສອນ)',
+        passConfirm: 'ຢືນຢັນລະຫັດຜ່ານໃໝ່',
+        passSave: '💾 ປ່ຽນລະຫັດຜ່ານ',
+        passErrCurrent: '⚠️ ລະຫັດຜ່ານປັດຈຸບັນບໍ່ຖືກຕ້ອງ',
+        passErrShort: '⚠️ ລະຫັດຜ່ານໃໝ່ຕ້ອງມີຢ່າງໜ້ອຍ 4 ຕົວອັກສອນ',
+        passErrMatch: '⚠️ ຢືນຢັນລະຫັດຜ່ານບໍ່ກົງກັນ',
+        passSaved: '✅ ປ່ຽນລະຫັດຜ່ານແລ້ວ',
+        themeDark: 'ປ່ຽນເປັນໂໝດມືດ',
+        themeLight: 'ປ່ຽນເປັນໂໝດສະຫວ່າງ',
+        failLeft: 'ເຫຼືອຄວາມພະຍາຍາມ {n} ຄັ້ງ',
+        lockMsg: '🔒 ລັອກຊົ່ວຄາວ — ພະຍາຍາມຜິດຄົບ 5 ຄັ້ງ ກະລຸນາລໍຖ້າ {time}',
+        lockMin: 'ນາທີ',
+        lockSec: 'ວິນາທີ',
+        adminTitle: '📊 ແຜງຄວບຄຸມແອດມິນ',
+        adminSub: 'ຈັດການຂໍ້ມູນລູກຄ້າ ການຊຳລະ ແລະ ຊອກຫາລູກຄ້າ',
+        stAll: 'ຄຳຂໍທັງໝົດ',
+        stSum: 'ວົງເງິນລວມທີ່ຂໍ',
+        stCount: 'ລູກຄ້າທັງໝົດ',
+        stLoaned: 'ເງິນທີ່ໃຫ້ກູ້',
+        stRepay: 'ຍອດທີ່ຄືນ',
+        stProfit: 'ກຳໄລ (ເກັບໄດ້ແທ້)',
+        statsTitle: '📈 ສະຖິຕິ',
+        stNew7: 'ລູກຄ້າໃໝ່ (7 ວັນ)',
+        stNew30: 'ລູກຄ້າໃໝ່ (30 ວັນ)',
+        stAvg: 'ຍອດກູ້ສະເລ່ຍ/ຄຳຂໍ',
+        chartApproved: 'ກຳໄລແທ້ລາຍວັນ (ຈາກຍອດທີ່ເກັບໄດ້)',
+        chartTotal: 'ລວມ {range} · {total}',
+        days: 'ມື້',
+        clearedTitle: '✅ ຫາກໍ່ຊຳລະຄົບຫຼ້າສຸດ',
+        clearedEmpty: 'ຍັງບໍ່ມີລູກຄ້າທີ່ຊຳລະຄົບ',
+        rangeTitle: 'ໄລຍະເວລາ',
+        range7: '7 ວັນ',
+        range30: '30 ວັນ',
+        range90: '90 ວັນ',
+        rangeCustom: 'ກຳນົດເອງ',
+        rangeTo: 'ເຖິງ',
+        rangeApply: 'ໃຊ້ໄລຍະນີ້',
+        rangeErr: '⚠️ ວັນທີບໍ່ຖືກຕ້ອງ (ຈາກຕ້ອງບໍ່ເກີນເຖິງ)',
+        rangeApplied: '✅ ໃຊ້ໄລຍະວັນທີແລ້ວ',
+        chartEmpty: 'ຍັງບໍ່ມີຂໍ້ມູນ',
+        decidedUnit: 'ລາຍການ',
+        searchPh: 'ຊອກຫາດ້ວຍເບີໂທ ຫຼື ຊື່ລູກຄ້າ...',
+        exportBtn: '📥 ສົ່ງອອກລາຍງານ CSV',
+        expReportTitle: 'ລາຍງານສະຫຼຸບສະຖິຕິລາຍອາທິດ',
+        expGenerated: 'ວັນທີສ້າງລາຍງານ',
+        expWeek: 'ອາທິດເລີ່ມ',
+        expReq: 'ຍື່ນ (ລາຍການ)',
+        expReqAmt: 'ວົງເງິນຍື່ນ',
+        expCust: 'ລູກຄ້າ (ຄົນ)',
+        expDone: '✅ ດາວໂຫຼດລາຍງານແລ້ວ',
+        addBtn: '➕ ເພີ່ມລູກຄ້າ',
+        addTitle: '➕ ເພີ່ມຂໍ້ມູນລູກຄ້າ',
+        addCancel: 'ຍົກເລີກ',
+        addSave: 'ບັນທຶກລູກຄ້າ',
+        addSaved: '✅ ບັນທຶກລູກຄ້າແລ້ວ',
+        lblFirst: 'ຊື່ <span class="req">*</span>',
+        lblLast: 'ນາມສະກຸນ <span class="req">*</span>',
+        lblPhone: 'ເບີ WhatsApp <span class="req">*</span>',
+        lblFb: 'Facebook (ໂປຣໄຟລ໌/ຊື່ຜູ້ໃຊ້)',
+        fbPh: 'ຊື່ຜູ້ໃຊ້ ຫຼື ລິ້ງ Facebook',
+        fbBtn: 'Facebook',
+        lblHouse: 'ຮູບທະບຽນບ້ານ (ບໍ່ບັງຄັບ · ສູງສຸດ 10 ຮູບ)',
+        addUploadText: 'ເພີ່ມຮູບທະບຽນບ້ານ<br><small>ເລືອກໄດ້ຫຼາຍຮູບ ສູງສຸດ 10 ຮູບ · JPG / PNG ບໍ່ເກີນ 5 MB ຕໍ່ຮູບ</small>',
+        errImgType: 'ກະລຸນາເລືອກໄຟລ໌ຮູບພາບ (JPG / PNG)',
+        errImgSize: 'ໄຟລ໌ໃຫຍ່ເກີນໄປ — ຕ້ອງບໍ່ເກີນ 5 MB',
+        errImgMax: 'ເພີ່ມຮູບໄດ້ສູງສຸດ 10 ຮູບ',
+        imgCount: '{n}/10 ຮູບ',
+        imgs: '{n} ຮູບ',
+        uploading: 'ກຳລັງບັນທຶກ... ⏳',
+        lblAmount: 'ຍອດທີ່ຕ້ອງການກູ້ (ກີບ) <span class="req">*</span>',
+        errFirst: 'ກະລຸນາຕື່ມຊື່ແທ້',
+        errLast: 'ກະລຸນາຕື່ມນາມສະກຸນ',
+        errPhone: 'ຕື່ມເບີໂທລະສັບ ເຊັ່ນ 0812345678 (ໄທ) ຫຼື 02012345678 (ລາວ)',
+        errAmount: 'ຍອດກູ້ຕ້ອງຢູ່ລະຫວ່າງ {min} – {max}',
+        formSummaryHtml: 'ຍອດກູ້ <strong>{principal}</strong><br>ດອກເບ້ຍ <strong>20% ຕໍ່ອາທິດ</strong> ຈາກຍອດຕົ້ນທີ່ຄ້າງຢູ່<br>ຍອດຄ້າງຈະເພີ່ມທຸກອາທິດທີ່ຍັງຊຳລະບໍ່ຄົບ',
+        emptySearch: 'ບໍ່ພົບຄຳຂໍກູ້ທີ່ກົງກັບການຊອກຫາ',
+        emptyAll: 'ຍັງບໍ່ມີຂໍ້ມູນລູກຄ້າໃນລະບົບ ກົດ "➕ ເພີ່ມລູກຄ້າ" ເພື່ອເພີ່ມລູກຄ້າຄົນທຳອິດ',
+        waBtn: 'WhatsApp',
+        editBtn: 'ແກ້ໄຂ',
+        editAria: 'ແກ້ໄຂຂໍ້ມູນນີ້',
+        delBtn: 'ລຶບ',
+        delAria: 'ລຶບລາຍການນີ້',
+        addTitleEdit: '✏️ ແກ້ໄຂຂໍ້ມູນລູກຄ້າ',
+        addSaveEdit: 'ບັນທຶກການແກ້ໄຂ',
+        addSavedEdit: '✅ ແກ້ໄຂຂໍ້ມູນລູກຄ້າແລ້ວ',
+        profitLabel: 'ກຳໄລ {profit}',
+        repayLabel: 'ຍອດທີ່ຄືນ {repay}',
+        payBtn: 'ຫັກລົບເງິນ',
+        payAria: 'ຫັກລົບເງິນຊຳລະຂອງລູກຄ້າລາຍນີ້',
+        payTitle: '💰 ຫັກລົບເງິນ',
+        payType: 'ເລືອກການຊຳລະ',
+        payTypeInterest: 'ຄືນດອກ (ດອກເບ້ຍ)',
+        payTypeCustom: 'ຄືນຕາມຈຳນວນທີ່ລະບຸ',
+        payTypeAll: 'ຄືນທັງໝົດ',
+        payAmount: 'ຈຳນວນເງິນທີ່ຮັບຊຳລະ (ກີບ)',
+        paySave: 'ບັນທຶກການຊຳລະ',
+        paySaved: '✅ ບັນທຶກການຊຳລະແລ້ວ',
+        offlineMode: 'ເຊີບເວີບໍ່ພ້ອມໃຊ້ງານ — ປ່ຽນເປັນໂໝດເຄື່ອງດຽວ (ບັນທຶກໃນເຄື່ອງນີ້)',
+        syncOnline: '🟢 ເຊື່ອມຕໍ່ເຊີບເວີ — ຂໍ້ມູນຊິງຄ໌ຂ້າມເຄື່ອງອັດຕະໂນມັດ',
+        syncOffline: '🔴 ໂໝດເຄື່ອງດຽວ — ຂໍ້ມູນບັນທຶກສະເພາະເຄື່ອງນີ້ (ເຊີບເວີອອຟລາຍ)',
+        payErrAmount: 'ກະລຸນາຕື່ມຈຳນວນເງິນທີ່ຮັບຊຳລະ (ຫຼາຍກວ່າ 0)',
+        payErrOver: 'ເກີນຍອດຄົງເຫຼືອຂອງສ່ວນນີ້ ({max})',
+        payErrAllShort: '⚠️ ຄືນທັງໝົດຕ້ອງຊຳລະຄົບຍອດທີ່ຕ້ອງຄືນ ({total})',
+        payErrZero: 'ຍອດສ່ວນນີ້ຊຳລະຄົບແລ້ວ',
+        paidLabel: 'ຈ່າຍແລ້ວ {paid} · ຄ້າງຊຳລະ {rem}',
+        paidFull: 'ຊຳລະຄົບແລ້ວ',
+        clearedBadge: '✅ ຊຳລະຄົບ · ກຳໄລນັບແລ້ວ',
+        payingBadge: '⏳ ກຳລັງຊຳລະໜີ້',
+        paySumHtml: 'ຕົ້ນຄ້າງ <strong>{principal}</strong> · ດອກຄ້າງ <strong>{interest}</strong><br>ຄ້າງຊຳລະລວມ <strong>{total}</strong> · ຈ່າຍແລ້ວ <strong>{paid}</strong>',
+        payPrevHtml: 'ຈະຊຳລະ <strong>{amount}</strong> ({type})<br>ເຫຼືອ {typeLabel}: <strong>{remType}</strong> · ຄ້າງຊຳລະລວມ <strong>{remTotal}</strong>',
+        payPrevAllHtml: 'ຈະຊຳລະ <strong>{amount}</strong> ({type})<br>ເຫຼືອຄ້າງຊຳລະລວມ: <strong>{remTotal}</strong>',
+        payPrevCustomHtml: 'ຈະຊຳລະ <strong>{amount}</strong> ({type})<br>ຫັກດອກ <strong>{iPart}</strong> · ຫັກຕົ້ນ <strong>{pPart}</strong><br>ເຫຼືອຄ້າງຊຳລະລວມ: <strong>{remTotal}</strong>',
+        payHistory: 'ປະຫວັດການຊຳລະ',
+        payHistItemHtml: '<div class="ph-item"><span class="ph-date">🗓 {date}</span><span class="ph-nums"><b>💵 {amount}</b><br><span class="ph-i">ດອກ {iPart}</span> · <span class="ph-p">ຕົ້ນ {pPart}</span></span></div>',
+        delTitle: '🗑 ຢືນຢັນການລຶບ',
+        delMsgHtml: 'ຕ້ອງການລຶບ <strong>{name}</strong> ອອກຈາກລະບົບບໍ່?<br>ການລຶບນີ້ບໍ່ສາມາດກັບຄືນໄດ້',
+        delCancel: 'ຍົກເລີກ',
+        delConfirm: '🗑 ລຶບ',
+        saveTitle: '💾 ຢືນຢັນການບັນທຶກ',
+        saveMsgHtml: 'ຕ້ອງການບັນທຶກຂໍ້ມູນຂອງ <strong>{name}</strong> ບໍ່?<br>ຍອດກູ້ <strong>{amount}</strong> · ດອກເບ້ຍ 20% ຕໍ່ອາທິດຈະເລີ່ມທົບຕັ້ງແຕ່ມື້ນີ້',
+        saveConfirm: '💾 ບັນທຶກ',
+        toastDeleted: '🗑 ລຶບລາຍການແລ້ວ',
+        errSave: '⚠️ ບັນທຶກບໍ່ສຳເລັດ — ພື້ນທີ່ຈັດເກັບເຕັມ ລອງລຶບຮູບບາງສ່ວນແລ້ວລອງໃໝ່',
+        footerNote: 'ເງິນດ່ວນ ມັນນີຟາດ',
+        kip: 'ກີບ',
+        doc: 'ເອກະສານ',
+        itemHtml:
+          '<div class="app-item"{doneAttr}>' +
+          '<div class="ai-main">' +
+          '<div class="ai-name">{first} {last}{clearedBadge}{payingBadge}</div>' +
+          '<div class="ai-meta"><span class="ai-ic">📱</span><span class="ai-txt">{phone}<span class="ai-dot"> · </span>🗓 {time}</span></div>' +
+          '</div>' +
+          '<div class="ai-money">' +
+          '<div class="ai-amount">ກູ້ {amount}</div>' +
+          '<div class="ai-line">📈 ດອກຄ້າງ {interestDue}</div>' +
+          '<div class="ai-line ai-due">💼 ຄ້າງຊຳລະລວມ {due}</div>' +
+          '<div class="ai-line ai-profit">💰 ກຳໄລ {profit}</div>{paidLine}</div>' +
+          '<div class="ai-docs">{thumb}</div>' +
+          '<div class="ai-controls">' +
+          '<div class="ai-actions">' +
+          '<button type="button" class="ai-pay" data-id="{id}" aria-label="{payAria}">💰 {payBtn}</button>' +
+          '<button type="button" class="ai-edit" data-id="{id}" aria-label="{editAria}">✏️ {editBtn}</button>' +
+          '<a class="ai-wa" href="{wa}" target="_blank" rel="noopener">💬 {waBtn}</a>' +
+          '{fbBtn}' +
+          '{delBtn}' +
+          '</div></div></div>',
+      },
+    };
+
+    let currentLang = localStorage.getItem(LANG_KEY) === 'lo' ? 'lo' : 'th';
+
+    function t(key, vars) {
+      let s = (I18N[currentLang] && I18N[currentLang][key]) || I18N.th[key] || key;
+      if (vars) {
+        Object.keys(vars).forEach((k) => { s = s.split('{' + k + '}').join(vars[k]); });
+      }
+      return s;
+    }
+
+    const fmtNum = (n) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(n));
+    const fmtKip = (n) => fmtNum(n) + ' ' + t('kip');
+    const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    /* ---------- ข้อมูล: เซิร์ฟเวอร์ (ซิงค์ข้ามเครื่อง) + สำรอง localStorage ตอน offline ---------- */
+    let API_OK = false;      // ต่อเซิร์ฟเวอร์อยู่ไหม
+    let MEM_APPS = null;     // ข้อมูลในหน่วยความจำ (โหมดเซิร์ฟเวอร์)
+
+    function getApps() {
+      if (API_OK && MEM_APPS) return MEM_APPS;
+      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch (e) { return []; }
+    }
+    function saveApps(list) {
+      if (FB_MODE && API_OK && MEM_APPS) {
+        MEM_APPS = list;
+        firebase.database().ref('apps').set(list)
+          .then(() => { /* saved */ })
+          .catch(() => {
+            // ຕັດການເຊື່ອມຕໍ່ → ປ່ຽນເປັນໂໝດເຄື່ອງດຽວ / ตัดการเชื่อมต่อ → สลับเป็นโหมดเครื่องเดียว
+            API_OK = false;
+            MEM_APPS = null;
+            try { localStorage.setItem(STORE_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+            setSyncStatus(false);
+            showToast('⚠️ ' + t('offlineMode'));
+          });
+      } else if (API_OK && MEM_APPS) {
+        MEM_APPS = list;
+        fetch('/api/apps', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(list),
+        })
+          .then((res) => { if (!res.ok) throw new Error('api'); return res.json(); })
+          .then((serverList) => { MEM_APPS = Array.isArray(serverList) ? serverList : list; })
+          .catch(() => {
+            // ຕັດການເຊື່ອມຕໍ່ → ປ່ຽນເປັນໂໝດເຄື່ອງດຽວ / ตัดการเชื่อมต่อ → สลับเป็นโหมดเครื่องเดียว
+            API_OK = false;
+            MEM_APPS = null;
+            try { localStorage.setItem(STORE_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+            setSyncStatus(false);
+            showToast('⚠️ ' + t('offlineMode'));
+          });
+      } else {
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
+      }
+    }
+    function setSyncStatus(online) {
+      const el = $('#sync-note');
+      if (!el) return;
+      if (online) {
+        el.hidden = false;
+        el.className = 'sync-note sync-on';
+        el.textContent = t('syncOnline');
+      } else {
+        el.hidden = false;
+        el.className = 'sync-note sync-off';
+        el.textContent = t('syncOffline');
+      }
+    }
+    async function hydrateApps() {
+      if (FB_MODE) return hydrateAppsFB();
+      try {
+        const res = await fetch('/api/apps');
+        if (!res.ok) throw new Error('api');
+        const serverList = await res.json();
+        MEM_APPS = Array.isArray(serverList) ? serverList : [];
+        API_OK = true;
+        if (!MEM_APPS.length) {
+          // ຄັ້ງທຳອິດ: ຖ້າມີຂໍ້ມູນ local ເກົ່າ ໃຫ້ຍົກຂຶ້ນເຊີບເວີ / ครั้งแรก: ถ้ามีข้อมูล local เก่า ให้นำขึ้นเซิร์ฟเวอร์
+          try {
+            const local = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
+            if (local.length) { MEM_APPS = local; saveApps(local); }
+          } catch (e) { /* ignore */ }
+        }
+        setSyncStatus(true);
+      } catch (e) {
+        API_OK = false;
+        MEM_APPS = null;
+        setSyncStatus(false);
+      }
+      renderList();
+    }
+    /* ໂໝດ Firebase: ອ່ານຂໍ້ມູນຈາກ Realtime Database / โหมด Firebase: อ่านข้อมูลจาก Realtime Database */
+    async function hydrateAppsFB() {
+      try {
+        const snap = await firebase.database().ref('apps').once('value');
+        const serverList = fbToArray(snap.val());
+        MEM_APPS = Array.isArray(serverList) ? serverList : [];
+        API_OK = true;
+        if (!MEM_APPS.length) {
+          // ຄັ້ງທຳອິດ: ຖ້າມີຂໍ້ມູນ local ເກົ່າ ໃຫ້ຍົກຂຶ້ນຖານຂໍ້ມູນ / ครั้งแรก: ถ้ามีข้อมูล local เก่า ให้นำขึ้นฐานข้อมูล
+          try {
+            const local = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
+            if (local.length) { MEM_APPS = local; saveApps(local); }
+          } catch (e) { /* ignore */ }
+        }
+        setSyncStatus(true);
+      } catch (e) {
+        API_OK = false;
+        MEM_APPS = null;
+        setSyncStatus(false);
+      }
+      renderList();
+    }
+
+    /* ดอกเบี้ยทบรายสัปดาห์: ทุกสัปดาห์คิด 20% จากยอดต้นที่ค้างอยู่ จนกว่าจะชำระครบ / ດອກເບ້ຍທບລາຍອາທິດ: ທຸກອາທິດຄິດ 20% ຈາກຍອດຕົ້ນທີ່ຄ້າງຢູ່ ຈົນກວ່າຈະຊຳລະຄົບ */
+    function loanCalc(app, asOf) {
+      asOf = asOf || Date.now();
+      const original = Number(app.amount || 0);
+      const start = Number(app.createdAt) || Number(app.statusChangedAt) || Date.now();
+      const RATE = WEEKLY_RATE;
+      const WEEK = 7 * 24 * 60 * 60 * 1000;
+      const all = (app.payments || []).filter((p) => Number(p.at || 0) <= asOf).sort((a, b) => a.at - b.at);
+
+      let principal = original; // ຕົ້ນທີ່ຍັງຄ້າງ / ต้นที่ยังค้าง
+      let accrued = 0; // ດອກທີ່ຄ້າງສະສົມ / ดอกที่ค้างสะสม
+      let paidInterest = 0;
+      let paidPrincipal = 0;
+      let elapsedWeeks = 0; // ຈຳນວນອາທິດທີ່ຄິດດອກແລ້ວ / จำนวนสัปดาห์ที่คิดดอกแล้ว
+      const payBreak = []; // ດອກທີ່ຈ່າຍຈິງຂອງແຕ່ລະງວດ (ຄຳນວນແບບຮຽບເວລາຈິງ) / ดอกที่จ่ายจริงของแต่ละงวด (คำนวณเรียลไทม์)
+
+      /* ຄິດດອກຕາມເວລາຈິງ: ດອກອາທິດທີ 1 ຄິດທັນທີທີ່ມີລາຍການກູ້, ແລ້ວທຸກໆ 7 ວັນທົບເພີ່ມ / คิดดอกตามเวลาจริง: ดอกสัปดาห์ที่ 1 คิดทันทีที่มีรายการกู้ แล้วทุก 7 วันทบเพิ่ม */
+      const accrueTo = (t) => {
+        const target = Math.max(1, Math.floor((t - start) / WEEK) + 1);
+        while (elapsedWeeks < target) {
+          accrued += RATE * principal;
+          elapsedWeeks++;
+        }
+      };
+
+      const applyPay = (p) => {
+        /* ຄິດດອກທົບຈົນເຖິງຈຸດທີ່ຈ່າຍກ່ອນ / คิดดอกทบจนถึงจุดที่จ่ายก่อน */
+        accrueTo(Number(p.at || 0));
+        let amt = Number(p.amount || 0);
+        let iPart = 0;
+        let pPart = 0;
+        if (p.type === 'all' || p.type === 'custom') {
+          // ຄືນທັງໝົດ / ລະບຸຈຳນວນ: ຈ່າຍດອກກ່ອນ ແລ້ວຈ່າຍຕົ້ນ / คืนทั้งหมด/ระบุจำนวน: จ่ายดอกก่อน ที่เหลือจ่ายต้น
+          iPart = Math.min(accrued, amt);
+          paidInterest += iPart;
+          accrued -= iPart;
+          amt -= iPart;
+          pPart = Math.min(principal, amt);
+          paidPrincipal += pPart;
+          principal -= pPart;
+        } else if (p.type === 'principal') {
+          pPart = Math.min(principal, amt);
+          paidPrincipal += pPart;
+          principal -= pPart;
+          // ຈ່າຍຕົ້ນກ່ອນຄົບອາທິດ → ດອກຂອງອາທິດນັ້ນຄິດຈາກຕົ້ນທີ່ເຫຼືອ / จ่ายต้นก่อนครบสัปดาห์ → ดอกของสัปดาห์นั้นคิดจากต้นที่เหลือ
+          if (pPart > 0) accrued = Math.max(0, accrued - pPart * RATE * elapsedWeeks);
+        } else {
+          // ຄືນດອກ / คืนดอก
+          iPart = Math.min(accrued, amt);
+          paidInterest += iPart;
+          accrued -= iPart;
+        }
+        // ບັນທຶກທຸກງວດ (ຍອດລວມ / ດອກ / ຕົ້ນ) / บันทึกทุกงวด (ยอดรวม / ดอก / ต้น)
+        payBreak.push({ at: Number(p.at || 0), total: Number(p.amount || 0), amount: iPart, principal: pPart });
+      };
+
+      for (const p of all) applyPay(p);
+      /* ຄິດດອກທົບຈົນເຖິງປັດຈຸບັນ / คิดดอกทบจนถึงปัจจุบัน */
+      accrueTo(asOf);
+
+      return {
+        principal: original,
+        remPrincipal: principal,
+        remInterest: accrued,
+        paidInterest: paidInterest,
+        paidPrincipal: paidPrincipal,
+        paidTotal: paidInterest + paidPrincipal,
+        remTotal: principal + accrued,
+        done: principal <= 0 && accrued <= 0,
+        payBreak: payBreak,
+      };
+    }
+
+    function toFbLink(app) {
+      const v = String(app.fb || '').trim();
+      if (v) {
+        if (/^https?:\/\//i.test(v)) return v;
+        return 'https://www.facebook.com/' + v.replace(/^@/, '');
+      }
+      const name = String((app.first || '') + ' ' + (app.last || '')).trim();
+      if (name) return 'https://www.facebook.com/search/top?q=' + encodeURIComponent(name);
+      return '';
+    }
+
+    function toWaLink(phone) {
+      const intl = (phone || '').replace(/\D/g, '');
+      let wa;
+      if (intl.startsWith('020') && intl.length === 11) wa = '856' + intl.slice(1);
+      else if (intl.startsWith('0')) wa = '66' + intl.slice(1);
+      else wa = intl;
+      return 'https://wa.me/' + wa;
+    }
+
+    /* ---------- สถานะ ---------- */
+
+    let search = '';
+
+    function renderStats(list) {
+      $('#st-count').textContent = list.length;
+      $('#st-loaned').textContent = fmtKip(list.reduce((s, a) => s + Number(a.amount || 0), 0));
+      let repay = 0;
+      let profit = 0;
+      list.forEach((a) => {
+        const c = loanCalc(a);
+        repay += c.paidTotal;
+        profit += c.paidInterest;
+      });
+      $('#st-repay').textContent = fmtKip(repay);
+      $('#st-profit').textContent = fmtKip(profit);
+      renderDeepStats(list);
+    }
+
+    /* สถิติเชิงลึก: ลูกค้าใหม่ อัตราการอนุมัติ และกราฟรายวัน */
+    function compactKip(n) {
+      if (n >= 1000000) return (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + 'M';
+      if (n >= 1000) return Math.round(n / 1000) + 'K';
+      return String(Math.round(n));
+    }
+
+    const DAY = 24 * 60 * 60 * 1000;
+    /* ເຂດເວລາ ປະເທດໄທ-ລາວ (UTC+7) / เขตเวลาไทย-ลาว (UTC+7) */
+    const TZ = 'Asia/Bangkok';
+    const TZ_OFF = 7 * 60 * 60 * 1000;
+    function ictDayStart(ts) { return Math.floor((ts + TZ_OFF) / DAY) * DAY - TZ_OFF; }
+    let chartDays = 7;
+    let customStart = '';
+    let customEnd = '';
+
+    function getRangeBounds() {
+      if (chartDays === 'custom' && customStart && customEnd) {
+        const s = new Date(customStart + 'T00:00:00+07:00').getTime();
+        const e = new Date(customEnd + 'T00:00:00+07:00').getTime();
+        if (isNaN(s) || isNaN(e) || e < s) return null;
+        const endTs = e + DAY;
+        return { startTs: s, endTs: endTs, days: Math.max(1, Math.round((endTs - s) / DAY)) };
+      }
+      /* ວັນຕາມເຂດເວລາໄທ-ລາວ / วันตามเขตเวลาไทย-ลาว */
+      const endTs = ictDayStart(Date.now()) + DAY;
+      const days = Number(chartDays) || 7;
+      return { startTs: endTs - days * DAY, endTs: endTs, days: days };
+    }
+
+    function dateLabel(ts, withWeekday) {
+      const locale = currentLang === 'lo' ? 'lo-LA' : 'th-TH';
+      const d = new Date(ts);
+      if (withWeekday) return d.toLocaleDateString(locale, { timeZone: TZ, weekday: 'short', day: 'numeric' });
+      return d.toLocaleDateString(locale, { timeZone: TZ, day: 'numeric', month: 'short' });
+    }
+
+    /* ສ້າງຊຸດຂໍ້ມູນຕາມຊ່ວງເວລາ: ລາຍວັນ ≤31 ວັນ, ລາຍອາທິດ >31 ວັນ / สร้างชุดข้อมูลตามช่วงเวลา: รายวัน ≤31 วัน, รายสัปดาห์ >31 วัน */
+    function buildSeries(list, pickDate, pickAmount, filterFn, bounds) {
+      const series = [];
+      if (bounds.days <= 31) {
+        const withWeekday = bounds.days <= 14;
+        for (let i = 0; i < bounds.days; i++) {
+          const s = bounds.startTs + i * DAY;
+          const e = s + DAY;
+          let total = 0;
+          let count = 0;
+          list.forEach((a) => {
+            if (filterFn && !filterFn(a)) return;
+            const ts = pickDate(a);
+            if (ts >= s && ts < e) { total += pickAmount(a); count++; }
+          });
+          series.push({ label: dateLabel(s, withWeekday), total: total, count: count });
+        }
+      } else {
+        for (let s = bounds.startTs; s < bounds.endTs; s += 7 * DAY) {
+          const e = Math.min(s + 7 * DAY, bounds.endTs);
+          let total = 0;
+          let count = 0;
+          list.forEach((a) => {
+            if (filterFn && !filterFn(a)) return;
+            const ts = pickDate(a);
+            if (ts >= s && ts < e) { total += pickAmount(a); count++; }
+          });
+          series.push({ label: dateLabel(s, false), total: total, count: count });
+        }
+      }
+      return series;
+    }
+
+    function renderBarChart(elId, series, color) {
+      const chart = $(elId);
+      const max = Math.max.apply(null, series.map((d) => d.total).concat([1]));
+      if (!series.some((d) => d.total > 0)) {
+        chart.innerHTML = '<div class="chart-empty">' + t('chartEmpty') + '</div>';
+        return;
+      }
+      const labelEvery = series.length > 14 ? Math.ceil(series.length / 7) : 1;
+      const barClass = color === 'gold' ? 'bar gold' : 'bar';
+      chart.innerHTML = series.map((d, idx) => {
+        const tip = d.count ? fmtKip(d.total) + ' · ' + d.count + ' ' + t('decidedUnit') : fmtKip(d.total);
+        const showLabel = labelEvery === 1 || idx % labelEvery === 0 || idx === series.length - 1;
+        return (
+          '<div class="bar-col">' +
+            '<div class="bar-val">' + (d.total ? compactKip(d.total) : '') + '</div>' +
+            '<div class="' + barClass + '" style="height:' + Math.max(3, Math.round((d.total / max) * 100)) + '%" title="' + tip + '"></div>' +
+            '<div class="bar-label">' + (showLabel ? d.label : '') + '</div>' +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    function renderCharts(list) {
+      const bounds = getRangeBounds();
+      const totalEl = $('#profit-total');
+      if (!bounds) {
+        totalEl.textContent = '';
+        renderBarChart('#profit-chart', [], 'gold');
+        return;
+      }
+      /* ກຳໄລຈິງ: ຄຳນວນຮຽບເວລາຈິງຈາກຂໍ້ມູນໃນລະບົບ (ລຶບລາຍການແລ້ວຈະຖືກຕັດອອກອັດຕະໂນມັດ) / กำไรจริง: คำนวณเรียลไทม์จากข้อมูลในระบบ (ลบรายการแล้วตัดออกอัตโนมัติ) */
+      const events = [];
+      list.forEach((a) => {
+        (loanCalc(a).payBreak || []).forEach((e) => { if (Number(e.amount)) events.push(e); });
+      });
+      const series = buildSeries(events, (e) => e.at, (e) => e.amount, null, bounds);
+      const total = series.reduce((s, d) => s + d.total, 0);
+      const rangeText = chartDays === 'custom'
+        ? (customStart + ' → ' + customEnd)
+        : (chartDays + ' ' + t('days'));
+      totalEl.textContent = total > 0 ? t('chartTotal', { range: rangeText, total: fmtKip(total) }) : '';
+      renderBarChart('#profit-chart', series, 'gold');
+    }
+
+    function renderDeepStats(list) {
+      const now = Date.now();
+
+      $('#st-new7').textContent = list.filter((a) => now - a.createdAt <= 7 * DAY).length;
+      $('#st-new30').textContent = list.filter((a) => now - a.createdAt <= 30 * DAY).length;
+
+      const total = list.reduce((s, a) => s + Number(a.amount || 0), 0);
+      const avg = list.length ? total / list.length : 0;
+      $('#st-avg').textContent = avg ? fmtKip(avg) : '—';
+
+      renderCharts(list);
+      renderClearedList(list);
+    }
+
+    function renderClearedList(list) {
+      const wrap = $('#cleared-list');
+      const cleared = list
+        .filter((a) => loanCalc(a).done)
+        .map((a) => {
+          const c = loanCalc(a);
+          const lastPay = (a.payments || []).reduce((m, p) => Math.max(m, Number(p.at) || 0), 0);
+          return {
+            app: a,
+            calc: c,
+            clearedAt: lastPay || a.statusChangedAt || a.createdAt,
+          };
+        })
+        .sort((x, y) => y.clearedAt - x.clearedAt)
+        .slice(0, 5);
+      if (!cleared.length) {
+        wrap.innerHTML = '<div class="cleared-empty">' + t('clearedEmpty') + '</div>';
+        return;
+      }
+      wrap.innerHTML = cleared.map((d) => {
+        const a = d.app;
+        const date = new Date(d.clearedAt).toLocaleString(currentLang === 'lo' ? 'lo-LA' : 'th-TH', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric' });
+        return (
+          '<div class="cleared-item">' +
+            '<div class="ci-avatar">✓</div>' +
+            '<div class="ci-main">' +
+              '<div class="ci-name">' + esc(a.first + ' ' + a.last) + '</div>' +
+              '<div class="ci-meta">🗓 ' + date + '</div>' +
+            '</div>' +
+            '<div class="ci-nums">' +
+              '<div class="ci-profit">💰 ' + t('profitLabel', { profit: fmtKip(d.calc.paidInterest) }) + '</div>' +
+              '<div class="ci-repay">' + t('repayLabel', { repay: fmtKip(d.calc.paidTotal) }) + '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    /* ---------- ປຸ່ມເລືອກຊ່ວງເວລາ / ปุ่มเลือกช่วงเวลา ---------- */
+
+    $$('#range-pills button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        $$('#range-pills button').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        chartDays = btn.dataset.days;
+        $('#range-custom').hidden = chartDays !== 'custom';
+        if (chartDays === 'custom') {
+          if (!customStart) customStart = toDateInput(new Date(Date.now() - 6 * DAY));
+          if (!customEnd) customEnd = toDateInput(new Date());
+          $('#range-from').value = customStart;
+          $('#range-to').value = customEnd;
+        }
+        renderList();
+      });
+    });
+
+    function toDateInput(d) {
+      const dd = new Date(d.getTime() + TZ_OFF);
+      const y = dd.getFullYear();
+      const m = String(dd.getMonth() + 1).padStart(2, '0');
+      const day = String(dd.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+
+    $('#range-apply').addEventListener('click', () => {
+      const fromVal = $('#range-from').value;
+      const toVal = $('#range-to').value;
+      if (!fromVal || !toVal || new Date(toVal + 'T00:00:00+07:00') < new Date(fromVal + 'T00:00:00+07:00')) {
+        showToast(t('rangeErr'), true);
+        return;
+      }
+      customStart = fromVal;
+      customEnd = toVal;
+      renderList();
+      showToast(t('rangeApplied'));
+    });
+
+    /* ---------- ສົ່ງອອກ CSV / ส่งออก CSV ---------- */
+
+    function quoteCsv(v) {
+      return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+    }
+
+    function weekStart(ts) {
+      const d = new Date(ts + TZ_OFF);
+      const day = (d.getDay() + 6) % 7; // ວັນຈັນ = 0 / วันจันทร์ = 0
+      d.setDate(d.getDate() - day);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime() - TZ_OFF;
+    }
+
+    function buildCsv(list) {
+      const lines = [];
+      const now = new Date();
+      const totalAmount = list.reduce((s, a) => s + Number(a.amount || 0), 0);
+      const new30 = list.filter((a) => Date.now() - a.createdAt <= 30 * DAY).length;
+
+      lines.push(quoteCsv(t('expReportTitle') + ' — MoneyFast'));
+      lines.push(quoteCsv(t('expGenerated')) + ',' + quoteCsv(now.toLocaleString(currentLang === 'lo' ? 'lo-LA' : 'th-TH', { timeZone: TZ })));
+      lines.push('');
+
+      /* ສະຫຼຸບລວມ / สรุปรวม */
+      lines.push([
+        quoteCsv(t('stAll')), quoteCsv(t('stSum')), quoteCsv(t('stNew30')),
+      ].join(','));
+      lines.push([
+        quoteCsv(list.length), quoteCsv(fmtNum(totalAmount)), quoteCsv(new30),
+      ].join(','));
+      lines.push('');
+
+      /* ລາຍອາທິດ / รายสัปดาห์ */
+      lines.push([
+        quoteCsv(t('expWeek')), quoteCsv(t('expReq')), quoteCsv(t('expReqAmt')),
+        quoteCsv(t('expCust')),
+      ].join(','));
+
+      if (!list.length) {
+        lines.push(quoteCsv(t('chartEmpty')));
+        return lines.join('\n');
+      }
+
+      const weeks = new Map();
+      list.forEach((a) => {
+        const ws = weekStart(a.createdAt);
+        if (!weeks.has(ws)) weeks.set(ws, { req: 0, reqAmt: 0, cust: new Set() });
+        const w = weeks.get(ws);
+        w.req += 1;
+        w.reqAmt += Number(a.amount || 0);
+        w.cust.add(a.phone);
+      });
+
+      [...weeks.entries()].sort((a, b) => b[0] - a[0]).forEach(([ws, w]) => {
+        lines.push([
+          quoteCsv(new Date(ws).toLocaleDateString('en-CA', { timeZone: TZ })),
+          quoteCsv(w.req), quoteCsv(fmtNum(w.reqAmt)),
+          quoteCsv(w.cust.size),
+        ].join(','));
+      });
+
+      return lines.join('\n');
+    }
+
+    $('#export-btn').addEventListener('click', () => {
+      const list = getApps();
+      const csv = buildCsv(list);
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'moneyfast-report-' + new Date().toLocaleDateString('en-CA', { timeZone: TZ }) + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(t('expDone'));
+    });
+
+    function getAppImages(a) {
+      if (Array.isArray(a.houseImages)) {
+        return a.houseImages.map((h) => (typeof h === 'string' ? h : (h && h.dataUrl))).filter(Boolean);
+      }
+      if (a.houseImage) return [a.houseImage];
+      return [];
+    }
+
+    function renderList() {
+      const list = getApps();
+      renderStats(list);
+
+      const q = search.trim().toLowerCase();
+      const filtered = list.filter((a) => {
+        const imgNames = (a.houseImages || []).map((h) => (h && h.name) || '').join(' ');
+        const hay = (a.first + ' ' + a.last + ' ' + a.phone + ' ' + (a.houseFileName || '') + ' ' + imgNames).toLowerCase();
+        return !q || hay.includes(q);
+      });
+
+      const wrap = $('#app-list');
+      if (!filtered.length) {
+        wrap.innerHTML = '<div class="empty-note">' + (list.length ? t('emptySearch') : t('emptyAll')) + '</div>';
+        return;
+      }
+
+      wrap.innerHTML = filtered.map((a) => {
+        const lc = loanCalc(a);
+        const paidLine = lc.done
+          ? '<div class="ai-line ai-paid done">✅ ' + t('paidFull') + '</div>'
+          : '<div class="ai-line ai-paid">💵 ' + t('paidLabel', { paid: fmtKip(lc.paidTotal), rem: fmtKip(lc.remTotal) }) + '</div>';
+        const clearedBadge = lc.done ? '<span class="badge-cleared">' + t('clearedBadge') + '</span>' : '';
+        const payingBadge = lc.done ? '' : '<span class="badge-paying">' + t('payingBadge') + '</span>';
+        const time = new Date(a.createdAt).toLocaleString(currentLang === 'lo' ? 'lo-LA' : 'th-TH', { timeZone: TZ, day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const imgs = getAppImages(a);
+        const thumb = imgs.length
+          ? '<div class="ai-thumbs">' + imgs.map((src) => '<img class="ai-thumb" src="' + src + '" alt="">').join('') + '</div>'
+          : '';
+        const delBtn = lc.done
+          ? '<button type="button" class="ai-del" data-id="' + a.id + '" aria-label="' + t('delAria') + '">🗑 ' + t('delBtn') + '</button>'
+          : '';
+        return t('itemHtml', {
+          doneAttr: ' data-done="' + (lc.done ? 'true' : 'false') + '"',
+          first: a.first,
+          last: a.last,
+          phone: a.phone,
+          time: time,
+          thumb: thumb,
+          amount: fmtKip(a.amount),
+          interestDue: fmtKip(lc.remInterest),
+          due: fmtKip(lc.remTotal),
+          profit: fmtKip(lc.paidInterest),
+          id: a.id,
+          wa: toWaLink(a.phone),
+          waBtn: t('waBtn'),
+          fbBtn: toFbLink(a) ? '<a class="ai-fb" href="' + toFbLink(a) + '" target="_blank" rel="noopener">📘 ' + t('fbBtn') + '</a>' : '',
+          editAria: t('editAria'),
+          editBtn: t('editBtn'),
+          clearedBadge: clearedBadge,
+          payingBadge: payingBadge,
+          payAria: t('payAria'),
+          payBtn: t('payBtn'),
+          paidLine: paidLine,
+          delBtn: delBtn,
+        });
+      }).join('');
+
+      /* เหตุการณ์ต่อรายการ */
+      wrap.querySelectorAll('.ai-edit').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const list = getApps();
+          const app = list.find((a) => a.id === btn.dataset.id);
+          if (!app) return;
+          editId = app.id;
+          fillAddForm(app);
+          updateAddModeLabels();
+          openAddModal();
+        });
+      });
+      wrap.querySelectorAll('.ai-pay').forEach((btn) => {
+        btn.addEventListener('click', () => { openPayModal(btn.dataset.id); });
+      });
+      wrap.querySelectorAll('.ai-del').forEach((btn) => {
+        btn.addEventListener('click', () => { openDelModal(btn.dataset.id); });
+      });
+      wrap.querySelectorAll('.ai-thumb').forEach((img) => {
+        img.addEventListener('click', () => openLightbox(img.src));
+      });
+    }
+
+    /* ---------- Lightbox ຮູບໃຫຍ່ / ดูภาพใหญ่ ---------- */
+
+    const lightbox = $('#lightbox');
+    const lbImg = $('#lb-img');
+
+    function openLightbox(src) {
+      lbImg.src = src;
+      lightbox.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+    function closeLightbox() {
+      lightbox.hidden = true;
+      lbImg.src = '';
+      document.body.style.overflow = '';
+    }
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox || e.target === lbImg) closeLightbox();
+    });
+    $('#lb-close').addEventListener('click', closeLightbox);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !lightbox.hidden) closeLightbox();
+    });
+
+    /* ---------- ค้นหา / กรอง ---------- */
+
+    $('#search-input').addEventListener('input', (e) => {
+      search = e.target.value;
+      renderList();
+    });
+
+    /* ---------- ຟອມເພີ່ມລູກຄ້າ / ฟอร์มเพิ่มลูกค้า ---------- */
+
+    const addModal = $('#add-modal');
+    const aFirst = $('#a-first');
+    const aLast = $('#a-last');
+    const aPhone = $('#a-phone');
+    const aFb = $('#a-fb');
+    const aHouse = $('#a-house');
+    const aAmount = $('#a-amount');
+    const MAX_IMAGES = 10;
+    let aImages = []; // [{ name, dataUrl }]
+    let editId = null;
+
+    function openAddModal() {
+      addModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      aFirst.focus();
+    }
+    function updateAddModeLabels() {
+      $('#add-title').textContent = t(editId ? 'addTitleEdit' : 'addTitle');
+      $('#a-save-btn').textContent = t(editId ? 'addSaveEdit' : 'addSave');
+    }
+    function fillAddForm(app) {
+      aFirst.value = app.first || '';
+      aLast.value = app.last || '';
+      aPhone.value = app.phone || '';
+      aFb.value = app.fb || '';
+      aAmount.value = app.amount || '';
+      aImages = (Array.isArray(app.houseImages) ? app.houseImages : [])
+        .map((h) => ({ name: (h && h.name) || '', dataUrl: (h && (h.dataUrl || h)) || '' }))
+        .filter((h) => h.dataUrl);
+      if (!aImages.length && app.houseImage) {
+        aImages = [{ name: app.houseFileName || '', dataUrl: app.houseImage }];
+      }
+      renderUploadPreviews();
+      $('#add-form').querySelectorAll('.field.invalid').forEach((f) => f.classList.remove('invalid'));
+      renderASummary();
+    }
+    function closeAddModal() {
+      addModal.hidden = true;
+      document.body.style.overflow = '';
+    }
+    function resetAddForm() {
+      $('#add-form').reset();
+      aImages = [];
+      editId = null;
+      updateAddModeLabels();
+      renderUploadPreviews();
+      $('#add-form').querySelectorAll('.field.invalid').forEach((f) => f.classList.remove('invalid'));
+      $('#a-summary').classList.remove('show');
+    }
+
+    $('#add-btn').addEventListener('click', openAddModal);
+    $('#add-close').addEventListener('click', () => { closeAddModal(); resetAddForm(); });
+    $('#a-cancel').addEventListener('click', () => { closeAddModal(); resetAddForm(); });
+    addModal.addEventListener('click', (e) => {
+      if (e.target === addModal) { closeAddModal(); resetAddForm(); }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !addModal.hidden && saveModal.hidden) { closeAddModal(); resetAddForm(); }
+    });
+
+    function fileToResizedDataUrl(file, maxDim) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+            const w = Math.max(1, Math.round(img.width * scale));
+            const h = Math.max(1, Math.round(img.height * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.72));
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderUploadPreviews() {
+      const wrap = $('#a-upload-preview');
+      const count = $('#a-upload-count');
+      wrap.innerHTML = aImages.map((img, i) =>
+        '<div class="up-item">' +
+        '<img src="' + img.dataUrl + '" alt="">' +
+        '<button type="button" class="up-remove" data-index="' + i + '" aria-label="ลบรูป">✕</button>' +
+        '</div>'
+      ).join('');
+      wrap.hidden = !aImages.length;
+      count.textContent = aImages.length ? t('imgCount', { n: aImages.length }) : '';
+      $('#a-upload-box').style.display = aImages.length >= MAX_IMAGES ? 'none' : '';
+    }
+
+    aHouse.addEventListener('change', async () => {
+      const files = Array.from(aHouse.files || []);
+      aHouse.value = '';
+      if (!files.length) return;
+      if (aImages.length + files.length > MAX_IMAGES) {
+        setAInvalid('a-house', t('errImgMax'));
+        return;
+      }
+      for (const file of files) {
+        if (!file.type.startsWith('image/')) { setAInvalid('a-house', t('errImgType')); return; }
+        if (file.size > 5 * 1024 * 1024) { setAInvalid('a-house', t('errImgSize')); return; }
+      }
+      try {
+        for (const file of files) {
+          const dataUrl = await fileToResizedDataUrl(file, 900);
+          aImages.push({ name: file.name, dataUrl: dataUrl });
+        }
+        clearAInvalid('a-house');
+        renderUploadPreviews();
+      } catch (err) {
+        setAInvalid('a-house', t('errImgType'));
+      }
+    });
+
+    $('#a-upload-preview').addEventListener('click', (e) => {
+      const btn = e.target.closest('.up-remove');
+      if (!btn) return;
+      aImages.splice(Number(btn.dataset.index), 1);
+      renderUploadPreviews();
+    });
+
+    function setAInvalid(name, msg) {
+      const el = $('#add-form').querySelector('[name="' + name + '"]');
+      const wrap = el.closest('.field');
+      wrap.classList.add('invalid');
+      wrap.querySelector('.error-msg').textContent = msg;
+    }
+    function clearAInvalid(name) {
+      const el = $('#add-form').querySelector('[name="' + name + '"]');
+      el.closest('.field').classList.remove('invalid');
+    }
+
+    function aValidate() {
+      let ok = true;
+      if (aFirst.value.trim().length < 2) { setAInvalid('a-first', t('errFirst')); ok = false; } else clearAInvalid('a-first');
+      if (aLast.value.trim().length < 2) { setAInvalid('a-last', t('errLast')); ok = false; } else clearAInvalid('a-last');
+      const phone = aPhone.value.replace(/\D/g, '');
+      if (!/^0\d{8,10}$/.test(phone)) { setAInvalid('a-phone', t('errPhone')); ok = false; } else clearAInvalid('a-phone');
+      const amount = Number(aAmount.value);
+      if (!amount || amount < MIN_AMOUNT || amount > MAX_AMOUNT) {
+        setAInvalid('a-amount', t('errAmount', { min: fmtKip(MIN_AMOUNT), max: fmtKip(MAX_AMOUNT) }));
+        ok = false;
+      } else clearAInvalid('a-amount');
+      return ok;
+    }
+
+    function renderASummary() {
+      const box = $('#a-summary');
+      const amount = Number(aAmount.value) || 0;
+      if (amount < MIN_AMOUNT) { box.classList.remove('show'); return; }
+      box.classList.add('show');
+      box.innerHTML = t('formSummaryHtml', {
+        principal: fmtKip(amount),
+      });
+    }
+    aAmount.addEventListener('input', renderASummary);
+
+    $('#add-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!aValidate()) return;
+      openSaveModal();
+    });
+
+    function doSave() {
+      const submitBtn = $('#a-save-btn');
+      const wasEdit = !!editId;
+      submitBtn.disabled = true;
+      submitBtn.textContent = t('uploading');
+
+      const houseImages = aImages.map((img) => ({ name: img.name, dataUrl: img.dataUrl }));
+
+      const first = aFirst.value.trim();
+      const last = aLast.value.trim();
+      const phone = aPhone.value.replace(/\D/g, '');
+      const amount = Number(aAmount.value);
+      const list = getApps();
+
+      if (wasEdit) {
+        const idx = list.findIndex((a) => a.id === editId);
+        if (idx >= 0) {
+          const old = list[idx];
+          list[idx] = Object.assign({}, old, {
+            first: first,
+            last: last,
+            phone: phone,
+            fb: aFb.value.trim(),
+            houseFileName: houseImages.length ? houseImages.map((h) => h.name).join(', ') : '',
+            houseImages: houseImages,
+            amount: amount,
+          });
+          try {
+            saveApps(list);
+          } catch (err) {
+            const stripped = Object.assign({}, list[idx]);
+            delete stripped.houseImages;
+            delete stripped.houseImage;
+            list[idx] = stripped;
+            try { saveApps(list); } catch (err2) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = t(wasEdit ? 'addSaveEdit' : 'addSave');
+              showToast(t('errSave'));
+              return;
+            }
+          }
+        }
+      } else {
+        const app = {
+          id: Date.now().toString(36),
+          first: first,
+          last: last,
+          phone: phone,
+          fb: aFb.value.trim(),
+          houseFileName: houseImages.length ? houseImages.map((h) => h.name).join(', ') : '',
+          houseImages: houseImages,
+          amount: amount,
+          createdAt: Date.now(),
+        };
+        list.unshift(app);
+        try {
+          saveApps(list);
+        } catch (err) {
+          const stripped = Object.assign({}, app);
+          delete stripped.houseImages;
+          delete stripped.houseImage;
+          list[0] = stripped;
+          try { saveApps(list); } catch (err2) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = t(wasEdit ? 'addSaveEdit' : 'addSave');
+            showToast(t('errSave'));
+            return;
+          }
+        }
+      }
+
+      renderList();
+      closeAddModal();
+      resetAddForm();
+      submitBtn.disabled = false;
+      showToast(t(wasEdit ? 'addSavedEdit' : 'addSaved'));
+    }
+
+    /* ---------- ຢືນຢັນການບັນທຶກ / ยืนยันการบันทึก ---------- */
+
+    const saveModal = $('#save-modal');
+
+    function openSaveModal() {
+      const first = aFirst.value.trim();
+      const last = aLast.value.trim();
+      const amount = Number(aAmount.value) || 0;
+      $('#save-msg').innerHTML = t('saveMsgHtml', {
+        name: esc(first + ' ' + last),
+        amount: fmtKip(amount),
+      });
+      saveModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+    function closeSaveModal() {
+      saveModal.hidden = true;
+      document.body.style.overflow = '';
+    }
+    $('#save-close').addEventListener('click', closeSaveModal);
+    $('#save-cancel').addEventListener('click', closeSaveModal);
+    saveModal.addEventListener('click', (e) => { if (e.target === saveModal) closeSaveModal(); });
+    $('#save-confirm').addEventListener('click', () => {
+      closeSaveModal();
+      doSave();
+    });
+
+    /* ---------- ຢືນຢັນການລຶບ / ยืนยันการลบ ---------- */
+
+    const delModal = $('#del-modal');
+    let delTargetId = null;
+
+    function openDelModal(id) {
+      const app = getApps().find((a) => a.id === id);
+      if (!app) return;
+      delTargetId = id;
+      $('#del-msg').innerHTML = t('delMsgHtml', { name: esc(app.first + ' ' + app.last) });
+      delModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+    function closeDelModal() {
+      delModal.hidden = true;
+      document.body.style.overflow = '';
+      delTargetId = null;
+    }
+    $('#del-close').addEventListener('click', closeDelModal);
+    $('#del-cancel').addEventListener('click', closeDelModal);
+    delModal.addEventListener('click', (e) => { if (e.target === delModal) closeDelModal(); });
+    $('#del-confirm').addEventListener('click', () => {
+      if (!delTargetId) return;
+      const list = getApps().filter((a) => a.id !== delTargetId);
+      saveApps(list);
+      renderList();
+      closeDelModal();
+      showToast(t('toastDeleted'));
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !delModal.hidden) closeDelModal();
+      if (e.key === 'Escape' && !saveModal.hidden) closeSaveModal();
+    });
+
+    /* ---------- ຟອມຫັກລົບເງິນ / ฟอร์มหักลบเงิน ---------- */
+
+    const payModal = $('#pay-modal');
+    let payTargetId = null;
+
+    function openPayModal(id) {
+      const app = getApps().find((a) => a.id === id);
+      if (!app) return;
+      payTargetId = id;
+      $('#pay-amount').value = '';
+      $('#pay-type').value = 'interest';
+      $('#pay-err').classList.remove('show');
+      $('#pay-err').textContent = '';
+      $('#pay-preview').classList.remove('show');
+      $('#pay-amount-field').classList.remove('invalid');
+      renderPaySummary();
+      renderPayHistory();
+      payModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      $('#pay-amount').focus();
+    }
+    function closePayModal() {
+      payModal.hidden = true;
+      document.body.style.overflow = '';
+      payTargetId = null;
+    }
+    function renderPaySummary() {
+      const app = getApps().find((a) => a.id === payTargetId);
+      if (!app) return;
+      const c = loanCalc(app);
+      $('#pay-summary').innerHTML = t('paySumHtml', {
+        principal: fmtKip(c.remPrincipal),
+        interest: fmtKip(c.remInterest),
+        total: fmtKip(c.remTotal),
+        paid: fmtKip(c.paidTotal),
+      });
+    }
+    function renderPayHistory() {
+      const box = $('#pay-history');
+      const app = getApps().find((a) => a.id === payTargetId);
+      const payments = (app && app.payments) || [];
+      if (!payments.length) { box.hidden = true; return; }
+      const c = loanCalc(app);
+      const list = (c.payBreak || []).slice().sort((a, b) => a.at - b.at);
+      if (!list.length) { box.hidden = true; return; }
+      box.hidden = false;
+      $('#pay-history-list').innerHTML = list.map((e) => t('payHistItemHtml', {
+        date: new Date(e.at).toLocaleString(currentLang === 'lo' ? 'lo-LA' : 'th-TH', { timeZone: TZ, day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        amount: fmtKip(e.total),
+        iPart: fmtKip(e.amount),
+        pPart: fmtKip(e.principal),
+      })).join('');
+    }
+    function renderPayPreview() {
+      const box = $('#pay-preview');
+      const app = getApps().find((a) => a.id === payTargetId);
+      if (!app) return;
+      const c = loanCalc(app);
+      const type = $('#pay-type').value;
+      const amount = Number($('#pay-amount').value) || 0;
+      const typeLabel = t(type === 'interest' ? 'payTypeInterest' : (type === 'all' ? 'payTypeAll' : 'payTypeCustom'));
+      let remType;
+      let remTotal;
+      let iPart = 0;
+      let pPart = 0;
+      if (type === 'interest') {
+        remType = Math.max(0, c.remInterest - amount);
+        remTotal = remType + c.remPrincipal;
+      } else if (type === 'all') {
+        // ຄືນທັງໝົດ: ຄິດຈາກຍອດຄ້າງທັງໝົດ / คืนทั้งหมด: คำนวณจากยอดค้างรวม (ดอก + ต้น)
+        remType = Math.max(0, c.remTotal - amount);
+        remTotal = remType;
+      } else {
+        // ລະບຸຈຳນວນ: ຫັກດອກກ່ອນ ແລ້ວຈ່າຍຕົ້ນ / ระบุจำนวน: หักดอกก่อน แล้วจ่ายต้น
+        iPart = Math.min(c.remInterest, amount);
+        pPart = Math.min(c.remPrincipal, amount - iPart);
+        remTotal = Math.max(0, c.remTotal - amount);
+      }
+      if (amount <= 0) { box.classList.remove('show'); return; }
+      box.classList.add('show');
+      box.innerHTML = (type === 'all')
+        ? t('payPrevAllHtml', { amount: fmtKip(amount), type: typeLabel, remTotal: fmtKip(remTotal) })
+        : (type === 'custom')
+          ? t('payPrevCustomHtml', { amount: fmtKip(amount), type: typeLabel, iPart: fmtKip(iPart), pPart: fmtKip(pPart), remTotal: fmtKip(remTotal) })
+          : t('payPrevHtml', {
+              amount: fmtKip(amount),
+              type: typeLabel,
+              typeLabel: typeLabel,
+              remType: fmtKip(remType),
+              remTotal: fmtKip(remTotal),
+            });
+    }
+    $('#pay-type').addEventListener('change', () => {
+      const app = getApps().find((a) => a.id === payTargetId);
+      const val = $('#pay-type').value;
+      if (app && val === 'all') {
+        // ຄືນທັງໝົດ: ຕື່ມຍອດທີ່ຕ້ອງຄືນທັງໝົດໃຫ້ອັດຕະໂນມັດ / คืนทั้งหมด: กรอกยอดที่ต้องคืนทั้งหมดให้อัตโนมัติ
+        $('#pay-amount').value = loanCalc(app).remTotal;
+        $('#pay-amount-field').classList.remove('invalid');
+        $('#pay-err').classList.remove('show');
+      } else if (val === 'custom') {
+        // ລະບຸຈຳນວນ: ໃຫ້ພິມເອງ / ระบุจำนวน: ให้กรอกเอง
+        $('#pay-amount').value = '';
+        $('#pay-amount').focus();
+        $('#pay-amount-field').classList.remove('invalid');
+        $('#pay-err').classList.remove('show');
+      }
+      renderPayPreview();
+    });
+    $('#pay-amount').addEventListener('input', () => {
+      $('#pay-amount-field').classList.remove('invalid');
+      $('#pay-err').classList.remove('show');
+      renderPayPreview();
+    });
+    $('#pay-close').addEventListener('click', closePayModal);
+    $('#pay-cancel').addEventListener('click', closePayModal);
+    payModal.addEventListener('click', (e) => { if (e.target === payModal) closePayModal(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !payModal.hidden) closePayModal();
+    });
+
+    $('#pay-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const list = getApps();
+      const app = list.find((a) => a.id === payTargetId);
+      if (!app) return;
+      const c = loanCalc(app);
+      const type = $('#pay-type').value;
+      const amount = Number($('#pay-amount').value);
+      const rem = type === 'interest' ? c.remInterest : c.remTotal;
+      const field = $('#pay-amount-field');
+      if (!amount || amount <= 0) {
+        field.classList.add('invalid');
+        $('#pay-err').textContent = t('payErrAmount');
+        $('#pay-err').classList.add('show');
+        return;
+      }
+      if (rem <= 0) {
+        field.classList.add('invalid');
+        $('#pay-err').textContent = t('payErrZero');
+        $('#pay-err').classList.add('show');
+        return;
+      }
+      if (amount > rem) {
+        field.classList.add('invalid');
+        $('#pay-err').textContent = t('payErrOver', { max: fmtKip(rem) });
+        $('#pay-err').classList.add('show');
+        return;
+      }
+      if (type === 'all' && amount !== rem) {
+        // ຄືນທັງໝົດຕ້ອງຊຳລະຄົບຍອດທີ່ຕ້ອງຄືນ / คืนทั้งหมดต้องชำระครบยอดที่ต้องคืน
+        field.classList.add('invalid');
+        $('#pay-err').textContent = t('payErrAllShort', { total: fmtKip(rem) });
+        $('#pay-err').classList.add('show');
+        return;
+      }
+      app.payments = app.payments || [];
+      const rec = { amount: amount, type: type, at: Date.now() };
+      if (type === 'all') rec.interestPortion = c.remInterest;
+      app.payments.push(rec);
+      try {
+        saveApps(list);
+      } catch (err) {
+        // ບໍ່ສາມາດບັນທຶກໄດ້ (ພື້ນທີ່ເຕັມ) / บันทึกไม่สำเร็จ (พื้นที่เต็ม)
+        app.payments.pop();
+        field.classList.add('invalid');
+        $('#pay-err').textContent = t('errSave');
+        $('#pay-err').classList.add('show');
+        return;
+      }
+      renderList();
+      closePayModal();
+      showToast(t('paySaved'));
+    });
+
+    /* ---------- ລັອກອິນແອດມິນ / ล็อกอินแอดมิน ---------- */
+
+    const ADMIN_USER = 'admin';
+    const PASS_KEY = 'moneyfast_admin_pass';
+    const AUTH_KEY = 'moneyfast_admin_auth';
+    const FAIL_KEY = 'moneyfast_fail_count';
+    const LOCK_KEY = 'moneyfast_lock_until';
+    const MAX_FAILS = 5;
+    const LOCK_MS = 5 * 60 * 1000;
+    let lockTimer = null;
+
+    function getFailCount() { try { return Number(localStorage.getItem(FAIL_KEY)) || 0; } catch (e) { return 0; } }
+    function resetFails() { try { localStorage.removeItem(FAIL_KEY); } catch (e) { /* ignore */ } }
+    function getLockUntil() { try { const v = localStorage.getItem(LOCK_KEY); return v ? Number(v) : 0; } catch (e) { return 0; } }
+    function isLocked() { return getLockUntil() > Date.now(); }
+
+    function fmtLockTime(ms) {
+      const s = Math.ceil(ms / 1000);
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return m > 0 ? m + ' ' + t('lockMin') + ' ' + r + ' ' + t('lockSec') : r + ' ' + t('lockSec');
+    }
+
+    function applyLockUI() {
+      const err = $('#login-error');
+      const pass = $('#login-pass');
+      const btn = $('#login-form button[type="submit"]');
+      if (!isLocked()) {
+        err.classList.remove('show', 'lock');
+        pass.disabled = false;
+        btn.disabled = false;
+        return;
+      }
+      pass.disabled = true;
+      btn.disabled = true;
+      err.classList.add('show', 'lock');
+      clearInterval(lockTimer);
+      lockTimer = setInterval(() => {
+        const left = getLockUntil() - Date.now();
+        if (left <= 0) {
+          clearInterval(lockTimer);
+          resetFails();
+          try { localStorage.removeItem(LOCK_KEY); } catch (e) { /* ignore */ }
+          applyLockUI();
+          return;
+        }
+        err.textContent = t('lockMsg', { time: fmtLockTime(left) });
+      }, 250);
+    }
+
+    function getAdminPass() {
+      try {
+        const s = localStorage.getItem(PASS_KEY);
+        return (s && s.length) ? s : 'admin';
+      } catch (e) { return 'admin'; }
+    }
+
+    function isAuthed() {
+      try { return localStorage.getItem(AUTH_KEY) === '1'; }
+      catch (e) { return false; }
+    }
+
+    function showLogin() {
+      $('#admin-app').hidden = true;
+      $('#login-screen').hidden = false;
+      $('#pass-btn').hidden = true;
+      $('#logout-btn').hidden = true;
+      $('#login-error').classList.remove('show');
+      if (FB_MODE) {
+        // ໂໝດ Firebase: ຊ່ອງທຳອິດແມ່ນອີເມວ / โหมด Firebase: ช่องแรกเป็นอีเมล
+        const u = $('#login-user');
+        u.placeholder = 'admin@example.com';
+        u.autocomplete = 'email';
+      }
+    }
+
+    function showApp() {
+      $('#admin-app').hidden = false;
+      $('#login-screen').hidden = true;
+      $('#pass-btn').hidden = FB_MODE; // ໂໝດ Firebase: ປ່ຽນລະຫັດຜ່ານຜ່ານ Firebase / โหมด Firebase: เปลี่ยนรหัสผ่านผ่าน Firebase
+      $('#logout-btn').hidden = false;
+      renderList();
+    }
+
+    $('#login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (FB_MODE) {
+        /* ໂໝດ Firebase: ເຂົ້າສູ່ລະບົບດ້ວຍ Firebase Auth / โหมด Firebase: ล็อกอินด้วย Firebase Auth */
+        const u = $('#login-user').value.trim();
+        const p = $('#login-pass').value;
+        if (!u || !p) {
+          $('#login-error').textContent = t('fbErrOther');
+          $('#login-error').classList.add('show');
+          return;
+        }
+        firebase.auth().signInWithEmailAndPassword(u, p)
+          .then(() => {
+            $('#login-error').classList.remove('show', 'lock');
+            showLoginOk();
+          })
+          .catch((err) => {
+            $('#login-error').textContent = fbAuthError(err);
+            $('#login-error').classList.add('show');
+          });
+        return;
+      }
+      if (isLocked()) { applyLockUI(); return; }
+      const u = $('#login-user').value.trim();
+      const p = $('#login-pass').value;
+      if (u === ADMIN_USER && p === getAdminPass()) {
+        resetFails();
+        try { localStorage.removeItem(LOCK_KEY); } catch (err) { /* ignore */ }
+        try { localStorage.setItem(AUTH_KEY, '1'); } catch (err) { /* ignore */ }
+        $('#login-error').classList.remove('show', 'lock');
+        showApp();
+        showLoginOk();
+      } else {
+        const fails = getFailCount() + 1;
+        try { localStorage.setItem(FAIL_KEY, String(fails)); } catch (err) { /* ignore */ }
+        if (fails >= MAX_FAILS) {
+          try { localStorage.setItem(LOCK_KEY, String(Date.now() + LOCK_MS)); } catch (err) { /* ignore */ }
+          applyLockUI();
+        } else {
+          $('#login-error').textContent = t('loginErr') + ' · ' + t('failLeft', { n: MAX_FAILS - fails });
+          $('#login-error').classList.add('show');
+        }
+      }
+    });
+
+    $('#logout-btn').addEventListener('click', () => {
+      if (FB_MODE) { firebase.auth().signOut().catch(() => { /* ignore */ }); }
+      try { localStorage.removeItem(AUTH_KEY); } catch (err) { /* ignore */ }
+      $('#login-form').reset();
+      showLogin();
+    });
+
+    /* ---------- ເຂົ້າສູ່ລະບົບສຳເລັດ / เข้าสู่ระบบสำเร็จ ---------- */
+
+    const loginOkModal = $('#login-ok-modal');
+    function showLoginOk() {
+      loginOkModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+    }
+    function closeLoginOk() {
+      loginOkModal.hidden = true;
+      document.body.style.overflow = '';
+    }
+    $('#login-ok-btn').addEventListener('click', closeLoginOk);
+    loginOkModal.addEventListener('click', (e) => { if (e.target === loginOkModal) closeLoginOk(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !loginOkModal.hidden) closeLoginOk();
+    });
+
+    /* ---------- ຕັ້ງຄ່າລະຫັດຜ່ານ / ตั้งค่ารหัสผ่าน ---------- */
+
+    const passModal = $('#pass-modal');
+    const passErr = $('#pass-err');
+    function openPassModal() {
+      $('#pass-form').reset();
+      passErr.classList.remove('show');
+      passModal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      setTimeout(() => $('#pass-current').focus(), 60);
+    }
+    function closePassModal() {
+      passModal.hidden = true;
+      document.body.style.overflow = '';
+    }
+    $('#pass-btn').addEventListener('click', openPassModal);
+    $('#pass-close').addEventListener('click', closePassModal);
+    $('#pass-cancel').addEventListener('click', closePassModal);
+    passModal.addEventListener('click', (e) => { if (e.target === passModal) closePassModal(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !passModal.hidden) closePassModal();
+    });
+    ['pass-current', 'pass-new', 'pass-confirm'].forEach((id) => {
+      $('#' + id).addEventListener('input', () => passErr.classList.remove('show'));
+    });
+    $('#pass-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const cur = $('#pass-current').value;
+      const nw = $('#pass-new').value;
+      const cf = $('#pass-confirm').value;
+      if (cur !== getAdminPass()) {
+        passErr.textContent = t('passErrCurrent');
+        passErr.classList.add('show');
+        return;
+      }
+      if (!nw || nw.length < 4) {
+        passErr.textContent = t('passErrShort');
+        passErr.classList.add('show');
+        return;
+      }
+      if (nw !== cf) {
+        passErr.textContent = t('passErrMatch');
+        passErr.classList.add('show');
+        return;
+      }
+      try {
+        localStorage.setItem(PASS_KEY, nw);
+      } catch (ex) {
+        passErr.textContent = t('errSave');
+        passErr.classList.add('show');
+        return;
+      }
+      closePassModal();
+      showToast(t('passSaved'));
+    });
+
+    /* ---------- ภาษา ---------- */
+
+    const langTh = $('#lang-th');
+    const langLo = $('#lang-lo');
+
+    function applyLang() {
+      document.documentElement.lang = currentLang;
+      document.title = t('title');
+
+      document.querySelectorAll('[data-i18n]').forEach((el) => {
+        const k = el.dataset.i18n;
+        /* ໂໝດ Firebase: ຊ່ອງທຳອິດແມ່ນອີເມວ / โหมด Firebase: ช่องแรกเป็นอีเมล */
+        el.textContent = t((FB_MODE && k === 'loginUser') ? 'fbEmail' : k);
+      });
+      document.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
+      document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+
+      langTh.classList.toggle('active', currentLang === 'th');
+      langLo.classList.toggle('active', currentLang === 'lo');
+
+      updateAddModeLabels();
+      renderList();
+    }
+
+    langTh.addEventListener('click', () => { currentLang = 'th'; localStorage.setItem(LANG_KEY, 'th'); applyLang(); });
+    langLo.addEventListener('click', () => { currentLang = 'lo'; localStorage.setItem(LANG_KEY, 'lo'); applyLang(); });
+
+    /* ---------- ໂໝດມືດ / โหมดมืด ---------- */
+
+    const themeBtn = $('#theme-btn');
+    function applyTheme() {
+      const dark = localStorage.getItem(THEME_KEY) === 'dark';
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      themeBtn.textContent = dark ? '☀️' : '🌙';
+      themeBtn.title = dark ? t('themeLight') : t('themeDark');
+      themeBtn.setAttribute('aria-label', dark ? t('themeLight') : t('themeDark'));
+    }
+    themeBtn.addEventListener('click', () => {
+      const dark = localStorage.getItem(THEME_KEY) !== 'dark';
+      try { localStorage.setItem(THEME_KEY, dark ? 'dark' : 'light'); } catch (e) { /* ignore */ }
+      applyTheme();
+    });
+
+    /* ---------- Toast ---------- */
+
+    let toastTimer = null;
+    function showToast(msg, isError) {
+      const el = $('#toast');
+      el.textContent = msg;
+      el.classList.toggle('err', !!isError);
+      el.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.classList.remove('show'); el.classList.remove('err'); }, 2600);
+    }
+
+    /* ---------- เริ่มต้น ---------- */
+    applyLang();
+    applyTheme();
+    $('#year').textContent = new Date(Date.now() + TZ_OFF).getFullYear();
+    if (!FB_MODE) hydrateApps(); // ໂໝດ Firebase: ໂຫຼດຂໍ້ມູນຫຼັງລ໋ອກອິນ / โหมด Firebase: โหลดข้อมูลหลังล็อกอิน
+    /* PWA: ລົງທະບຽນ service worker (ໃຫ້ຕິດຕັ້ງໃສ່ໜ້າຈໍ + ໃຊ້ offline ໄດ້) / ลงทะเบียน service worker (ติดตั้งลงหน้าจอ + ใช้ offline ได้) */
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(() => { /* ignore */ });
+      });
+    }
+    if (FB_MODE) {
+      /* ໂໝດ Firebase: ຕິດຕາມສະຖານະເຂົ້າສູ່ລະບົບ / โหมด Firebase: ฟังสถานะล็อกอิน */
+      let fbHydrated = false;
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          showApp();
+          if (!fbHydrated) { fbHydrated = true; hydrateApps(); }
+        } else {
+          fbHydrated = false;
+          showLogin();
+        }
+      });
+    } else if (isAuthed()) {
+      showApp();
+    } else {
+      showLogin();
+      applyLockUI();
+    }
+  </script>
+</body>
+</html>
