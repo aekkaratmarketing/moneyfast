@@ -40,7 +40,7 @@ jobs:
         working-directory: ios/ios
         run: |
           # หา Xcode workspace/project อัตโนมัติ (โครงสร้าง Capacitor ใหม่ อยู่ในโฟลเดอร์ App/)
-          WS=$(find . -name "*.xcworkspace" -not -path "*/build/*" | head -1)
+          WS=$(find . -name "*.xcworkspace" -not -path "*/build/*" -not -path "*.xcodeproj/*" | head -1)
           PROJ=$(find . -name "*.xcodeproj" -not -path "*/build/*" | head -1)
           if [ -n "$WS" ]; then
             TARGET="-workspace $(basename "$WS")"
