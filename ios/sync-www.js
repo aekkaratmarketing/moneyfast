@@ -25,4 +25,7 @@ for (const f of FILES) {
   fs.copyFileSync(src, path.join(WWW, f));
   copied++;
 }
-console.log('✅ Sync www ครบ ' + copied + '/' + FILES.length + ' ไฟล์ →', WWW);
+/* Capacitor กำหนด entry point ต้องเป็น index.html — คัดลอก admin.html เป็น index.html ด้วย */
+fs.copyFileSync(path.join(ROOT, 'admin.html'), path.join(WWW, 'index.html'));
+copied++;
+console.log('✅ Sync www ครบ ' + copied + '/' + (FILES.length + 1) + ' ไฟล์ →', WWW);
