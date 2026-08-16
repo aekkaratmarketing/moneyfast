@@ -1,0 +1,10 @@
+name = "moneyfast-api"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+ALLOWED_ORIGINS = "https://moneyfast.pages.dev,http://127.0.0.1:8321,http://localhost:8321"
+
+[[kv_namespaces]]
+binding = "MONEYFAST_KV"
+id = "6407542e266f4980a76542653102f62b"

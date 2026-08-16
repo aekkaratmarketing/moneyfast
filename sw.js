@@ -2,7 +2,7 @@
    ໜ້າເວັບ: network-first (ໄດ້ເວີຊັນໃໝ່ສະເໝີ)
    ໄຟລ໌ static: cache-first (ໂຫຼດໄວ + ໃຊ້ງານ offline ໄດ້)
    หน้าเว็บ: network-first (ได้เวอร์ชันใหม่เสมอ) / ไฟล์ static: cache-first (โหลดเร็ว + ใช้ offline ได้) */
-const CACHE = 'moneyfast-v4';
+const CACHE = 'moneyfast-v5';
 const CORE = [
   './',
   './admin.html',
@@ -10,9 +10,6 @@ const CORE = [
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
-  './vendor/firebase/firebase-app-compat.js',
-  './vendor/firebase/firebase-auth-compat.js',
-  './vendor/firebase/firebase-database-compat.js',
   './vendor/fonts/fonts.css',
 ];
 
@@ -35,8 +32,8 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  // ຄຳຂໍ API/RTDB: ບໍ່ cache (ຕ້ອງໄດ້ຂໍ້ມູນສົດສະເໝີ) / คำขอ API/RTDB: ไม่ cache (ต้องได้ข้อมูลสดเสมอ)
-  if (req.url.includes('/api/') || req.url.includes('firebasedatabase.app')) return;
+  // ຄຳຂໍ API: ບໍ່ cache (ຕ້ອງໄດ້ຂໍ້ມູນສົດສະເໝີ) / คำขอ API: ไม่ cache (ต้องได้ข้อมูลสดเสมอ)
+  if (req.url.includes('/api/')) return;
 
   // หน้าเว็บ: network-first — อัปเดตใหม่เสมอ ถ้า offline ค่อยใช้ cache
   if (req.mode === 'navigate') {

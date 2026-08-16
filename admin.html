@@ -13,32 +13,6 @@
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="vendor/fonts/fonts.css">
-  <!-- Firebase SDK (compat) — ใช้เมื่อโหมด Firebase เปิดอยู่ (ดูบล็อก FB_CONFIG ด้านล่าง) -->
-  <script src="vendor/firebase/firebase-app-compat.js"></script>
-  <script src="vendor/firebase/firebase-auth-compat.js"></script>
-  <script src="vendor/firebase/firebase-database-compat.js"></script>
-  <script>
-    /* ============================================================
-       🔥 ตั้งค่า Firebase (โหมด Firebase — หลัง deploy ขึ้น Firebase Hosting)
-
-       วิธีเอาค่า: คอนโซล Firebase → ⚙ ตั้งค่าโปรเจกต์ → ทั่วไป
-       → "แอปของคุณ" → กด </> (Web) → สร้างแอป → คัดลอกค่าใส่ด้านล่าง
-
-       ถ้ายังไม่ใส่ apiKey จริง (placeholder) → ระบบใช้โหมดเครื่องเดียว
-       (server.js ทดสอบในเครื่อง เหมือนเดิม) พอใส่ค่าแล้วจะสลับเป็น
-       โหมด Firebase อัตโนมัติ: ล็อกอินด้วย Firebase Auth + ข้อมูลใน
-       Realtime Database (ซิงค์ข้ามเครื่อง) โดยไม่ต้องมี backend ใด ๆ
-       ============================================================ */
-    window.FB_CONFIG = {
-      apiKey: 'AIzaSyDBKWj456m2RMafAQH4yylCAbI-KejUZSg',
-      authDomain: 'moneyfast-b0ac0.firebaseapp.com',
-      databaseURL: 'https://moneyfast-b0ac0-default-rtdb.asia-southeast1.firebasedatabase.app',
-      projectId: 'moneyfast-b0ac0',
-      storageBucket: 'moneyfast-b0ac0.firebasestorage.app',
-      messagingSenderId: '828684426030',
-      appId: '1:828684426030:web:93b97c2338dad63f0d78bf'
-    };
-  </script>
   <style>
     /* ===== MoneyFast Admin ===== */
     :root {
@@ -950,35 +924,9 @@
     const LANG_KEY = 'moneyfast_lang';
     const THEME_KEY = 'moneyfast_theme';
 
-    /* ---------- Firebase mode (โหมด Firebase — หลัง deploy ขึ้น Hosting + ใส่ FB_CONFIG จริง) ---------- */
-    const FB_CFG = window.FB_CONFIG || {};
-    const FB_MODE = !!(FB_CFG.apiKey && FB_CFG.apiKey !== 'YOUR_API_KEY' && typeof firebase !== 'undefined');
-    if (FB_MODE) {
-      try { firebase.initializeApp(FB_CFG); } catch (e) { /* ignore */ }
-    }
-
-    /* RTDB เก็บ array เป็น object { "0": ..., "1": ... } — แปลงกลับเป็น array */
-    function fbToArray(val) {
-      if (val == null) return [];
-      if (Array.isArray(val)) return val;
-      if (typeof val === 'object') {
-        const keys = Object.keys(val).sort((a, b) => {
-          const na = Number(a);
-          const nb = Number(b);
-          if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
-          return a.localeCompare(b);
-        });
-        return keys.map((k) => val[k]);
-      }
-      return [];
-    }
-    function fbAuthError(err) {
-      const c = (err && err.code) || '';
-      if (c === 'auth/invalid-email') return t('fbErrEmail');
-      if (c === 'auth/wrong-password' || c === 'auth/user-not-found' || c === 'auth/invalid-credential' || c === 'auth/invalid-login-credentials') return t('fbErrWrong');
-      if (c === 'auth/too-many-requests') return t('fbErrMany');
-      return t('fbErrOther');
-    }
+    /* ---------- Cloudflare backend (ข้อมูล + ล็อกอินอยู่ที่ Cloudflare Worker/KV — ไม่มี Firebase) ---------- */
+    const API_BASE = 'https://moneyfast.pages.dev/api';
+    function getToken() { try { return localStorage.getItem(AUTH_KEY) || ''; } catch (e) { return ''; } }
 
     const $ = (sel) => document.querySelector(sel);
     const $$ = (sel) => document.querySelectorAll(sel);
@@ -1347,23 +1295,11 @@
       try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; } catch (e) { return []; }
     }
     function saveApps(list) {
-      if (FB_MODE && API_OK && MEM_APPS) {
+      if (API_OK && MEM_APPS) {
         MEM_APPS = list;
-        firebase.database().ref('apps').set(list)
-          .then(() => { /* saved */ })
-          .catch(() => {
-            // ຕັດການເຊື່ອມຕໍ່ → ປ່ຽນເປັນໂໝດເຄື່ອງດຽວ / ตัดการเชื่อมต่อ → สลับเป็นโหมดเครื่องเดียว
-            API_OK = false;
-            MEM_APPS = null;
-            try { localStorage.setItem(STORE_KEY, JSON.stringify(list)); } catch (e) { /* ignore */ }
-            setSyncStatus(false);
-            showToast('⚠️ ' + t('offlineMode'));
-          });
-      } else if (API_OK && MEM_APPS) {
-        MEM_APPS = list;
-        fetch('/api/apps', {
+        fetch(API_BASE + '/apps', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
           body: JSON.stringify(list),
         })
           .then((res) => { if (!res.ok) throw new Error('api'); return res.json(); })
@@ -1394,37 +1330,14 @@
       }
     }
     async function hydrateApps() {
-      if (FB_MODE) return hydrateAppsFB();
       try {
-        const res = await fetch('/api/apps');
+        const res = await fetch(API_BASE + '/apps', { headers: { 'Authorization': 'Bearer ' + getToken() } });
         if (!res.ok) throw new Error('api');
         const serverList = await res.json();
         MEM_APPS = Array.isArray(serverList) ? serverList : [];
         API_OK = true;
         if (!MEM_APPS.length) {
           // ຄັ້ງທຳອິດ: ຖ້າມີຂໍ້ມູນ local ເກົ່າ ໃຫ້ຍົກຂຶ້ນເຊີບເວີ / ครั้งแรก: ถ้ามีข้อมูล local เก่า ให้นำขึ้นเซิร์ฟเวอร์
-          try {
-            const local = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
-            if (local.length) { MEM_APPS = local; saveApps(local); }
-          } catch (e) { /* ignore */ }
-        }
-        setSyncStatus(true);
-      } catch (e) {
-        API_OK = false;
-        MEM_APPS = null;
-        setSyncStatus(false);
-      }
-      renderList();
-    }
-    /* ໂໝດ Firebase: ອ່ານຂໍ້ມູນຈາກ Realtime Database / โหมด Firebase: อ่านข้อมูลจาก Realtime Database */
-    async function hydrateAppsFB() {
-      try {
-        const snap = await firebase.database().ref('apps').once('value');
-        const serverList = fbToArray(snap.val());
-        MEM_APPS = Array.isArray(serverList) ? serverList : [];
-        API_OK = true;
-        if (!MEM_APPS.length) {
-          // ຄັ້ງທຳອິດ: ຖ້າມີຂໍ້ມູນ local ເກົ່າ ໃຫ້ຍົກຂຶ້ນຖານຂໍ້ມູນ / ครั้งแรก: ถ้ามีข้อมูล local เก่า ให้นำขึ้นฐานข้อมูล
           try {
             const local = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
             if (local.length) { MEM_APPS = local; saveApps(local); }
@@ -2443,8 +2356,6 @@
 
     /* ---------- ລັອກອິນແອດມິນ / ล็อกอินแอดมิน ---------- */
 
-    const ADMIN_USER = 'admin';
-    const PASS_KEY = 'moneyfast_admin_pass';
     const AUTH_KEY = 'moneyfast_admin_auth';
     const FAIL_KEY = 'moneyfast_fail_count';
     const LOCK_KEY = 'moneyfast_lock_until';
@@ -2491,15 +2402,8 @@
       }, 250);
     }
 
-    function getAdminPass() {
-      try {
-        const s = localStorage.getItem(PASS_KEY);
-        return (s && s.length) ? s : 'admin';
-      } catch (e) { return 'admin'; }
-    }
-
     function isAuthed() {
-      try { return localStorage.getItem(AUTH_KEY) === '1'; }
+      try { return !!localStorage.getItem(AUTH_KEY); }
       catch (e) { return false; }
     }
 
@@ -2509,71 +2413,67 @@
       $('#pass-btn').hidden = true;
       $('#logout-btn').hidden = true;
       $('#login-error').classList.remove('show');
-      if (FB_MODE) {
-        // ໂໝດ Firebase: ຊ່ອງທຳອິດແມ່ນຊື່ຜູ້ໃຊ້ / โหมด Firebase: ช่องแรกเป็นชื่อผู้ใช้ (กรอก username ล้วนๆ)
-        const u = $('#login-user');
-        u.placeholder = 'admin';
-        u.autocomplete = 'username';
-      }
+      const u = $('#login-user');
+      u.placeholder = 'admin';
+      u.autocomplete = 'username';
     }
 
     function showApp() {
       $('#admin-app').hidden = false;
       $('#login-screen').hidden = true;
-      $('#pass-btn').hidden = FB_MODE; // ໂໝດ Firebase: ປ່ຽນລະຫັດຜ່ານຜ່ານ Firebase / โหมด Firebase: เปลี่ยนรหัสผ่านผ่าน Firebase
+      $('#pass-btn').hidden = false;
       $('#logout-btn').hidden = false;
       renderList();
     }
 
     $('#login-form').addEventListener('submit', (e) => {
       e.preventDefault();
-      if (FB_MODE) {
-        /* ໂໝດ Firebase: ເຂົ້າສູ່ລະບົບດ້ວຍ Firebase Auth / โหมด Firebase: ล็อกอินด้วย Firebase Auth */
-        let u = $('#login-user').value.trim();
-        const p = $('#login-pass').value;
-        if (!u || !p) {
-          $('#login-error').textContent = t('fbErrOther');
-          $('#login-error').classList.add('show');
-          return;
-        }
-        /* กรอก username ล้วน → แปลงเป็นอีเมลลับสำหรับ Firebase Auth (กรอกอีเมลเต็มก็ใช้ได้) */
-        if (!u.includes('@')) u = u + '@moneyfast.local';
-        firebase.auth().signInWithEmailAndPassword(u, p)
-          .then(() => {
-            $('#login-error').classList.remove('show', 'lock');
-            showLoginOk();
-          })
-          .catch((err) => {
-            $('#login-error').textContent = fbAuthError(err);
-            $('#login-error').classList.add('show');
-          });
-        return;
-      }
       if (isLocked()) { applyLockUI(); return; }
       const u = $('#login-user').value.trim();
       const p = $('#login-pass').value;
-      if (u === ADMIN_USER && p === getAdminPass()) {
-        resetFails();
-        try { localStorage.removeItem(LOCK_KEY); } catch (err) { /* ignore */ }
-        try { localStorage.setItem(AUTH_KEY, '1'); } catch (err) { /* ignore */ }
-        $('#login-error').classList.remove('show', 'lock');
-        showApp();
-        showLoginOk();
-      } else {
-        const fails = getFailCount() + 1;
-        try { localStorage.setItem(FAIL_KEY, String(fails)); } catch (err) { /* ignore */ }
-        if (fails >= MAX_FAILS) {
-          try { localStorage.setItem(LOCK_KEY, String(Date.now() + LOCK_MS)); } catch (err) { /* ignore */ }
-          applyLockUI();
-        } else {
-          $('#login-error').textContent = t('loginErr') + ' · ' + t('failLeft', { n: MAX_FAILS - fails });
-          $('#login-error').classList.add('show');
-        }
+      if (!u || !p) {
+        $('#login-error').textContent = t('fbErrOther');
+        $('#login-error').classList.add('show');
+        return;
       }
+      const btn = $('#login-form button[type="submit"]');
+      btn.disabled = true;
+      fetch(API_BASE + '/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: u, password: p }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          btn.disabled = false;
+          if (data && data.ok && data.token) {
+            resetFails();
+            try { localStorage.removeItem(LOCK_KEY); } catch (err) { /* ignore */ }
+            try { localStorage.setItem(AUTH_KEY, data.token); } catch (err) { /* ignore */ }
+            $('#login-error').classList.remove('show', 'lock');
+            showApp();
+            hydrateApps();
+            showLoginOk();
+          } else {
+            const fails = getFailCount() + 1;
+            try { localStorage.setItem(FAIL_KEY, String(fails)); } catch (err) { /* ignore */ }
+            if (fails >= MAX_FAILS) {
+              try { localStorage.setItem(LOCK_KEY, String(Date.now() + LOCK_MS)); } catch (err) { /* ignore */ }
+              applyLockUI();
+            } else {
+              $('#login-error').textContent = t('loginErr') + ' · ' + t('failLeft', { n: MAX_FAILS - fails });
+              $('#login-error').classList.add('show');
+            }
+          }
+        })
+        .catch(() => {
+          btn.disabled = false;
+          $('#login-error').textContent = t('fbErrOther');
+          $('#login-error').classList.add('show');
+        });
     });
 
     $('#logout-btn').addEventListener('click', () => {
-      if (FB_MODE) { firebase.auth().signOut().catch(() => { /* ignore */ }); }
       try { localStorage.removeItem(AUTH_KEY); } catch (err) { /* ignore */ }
       $('#login-form').reset();
       showLogin();
@@ -2626,11 +2526,6 @@
       const cur = $('#pass-current').value;
       const nw = $('#pass-new').value;
       const cf = $('#pass-confirm').value;
-      if (cur !== getAdminPass()) {
-        passErr.textContent = t('passErrCurrent');
-        passErr.classList.add('show');
-        return;
-      }
       if (!nw || nw.length < 4) {
         passErr.textContent = t('passErrShort');
         passErr.classList.add('show');
@@ -2641,15 +2536,32 @@
         passErr.classList.add('show');
         return;
       }
-      try {
-        localStorage.setItem(PASS_KEY, nw);
-      } catch (ex) {
-        passErr.textContent = t('errSave');
-        passErr.classList.add('show');
-        return;
-      }
-      closePassModal();
-      showToast(t('passSaved'));
+      const btn = $('#pass-form button[type="submit"]');
+      btn.disabled = true;
+      fetch(API_BASE + '/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ current: cur, next: nw }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          btn.disabled = false;
+          if (data && data.ok) {
+            closePassModal();
+            showToast(t('passSaved'));
+          } else if (data && data.error === 'wrong-current') {
+            passErr.textContent = t('passErrCurrent');
+            passErr.classList.add('show');
+          } else {
+            passErr.textContent = t('errSave');
+            passErr.classList.add('show');
+          }
+        })
+        .catch(() => {
+          btn.disabled = false;
+          passErr.textContent = t('errSave');
+          passErr.classList.add('show');
+        });
     });
 
     /* ---------- ภาษา ---------- */
@@ -2662,9 +2574,7 @@
       document.title = t('title');
 
       document.querySelectorAll('[data-i18n]').forEach((el) => {
-        const k = el.dataset.i18n;
-        /* ໂໝດ Firebase: ຊ່ອງທຳອິດແມ່ນອີເມວ / โหมด Firebase: ช่องแรกเป็นอีเมล */
-        el.textContent = t((FB_MODE && k === 'loginUser') ? 'fbEmail' : k);
+        el.textContent = t(el.dataset.i18n);
       });
       document.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
       document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
@@ -2711,27 +2621,30 @@
     applyLang();
     applyTheme();
     $('#year').textContent = new Date(Date.now() + TZ_OFF).getFullYear();
-    if (!FB_MODE) hydrateApps(); // ໂໝດ Firebase: ໂຫຼດຂໍ້ມູນຫຼັງລ໋ອກອິນ / โหมด Firebase: โหลดข้อมูลหลังล็อกอิน
     /* PWA: ລົງທະບຽນ service worker (ໃຫ້ຕິດຕັ້ງໃສ່ໜ້າຈໍ + ໃຊ້ offline ໄດ້) / ลงทะเบียน service worker (ติดตั้งลงหน้าจอ + ใช้ offline ได้) */
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch(() => { /* ignore */ });
       });
     }
-    if (FB_MODE) {
-      /* ໂໝດ Firebase: ຕິດຕາມສະຖານະເຂົ້າສູ່ລະບົບ / โหมด Firebase: ฟังสถานะล็อกอิน */
-      let fbHydrated = false;
-      firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
+    if (isAuthed()) {
+      /* ກວດ token ກັບເຊີບເວີ — ຖ້າເນັດຂັດຂ້ອງໃຫ້ເຂົ້າລະບົບຊົ່ວຄາວດ້ວຍຂໍ້ມູນ cache / ตรวจ token กับเซิร์ฟเวอร์ — ถ้าเน็ตขัดข้อง ให้เข้าระบบชั่วคราวด้วยข้อมูล cache */
+      fetch(API_BASE + '/me', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+        .then((res) => {
+          if (!res.ok) throw new Error('unauth');
           showApp();
-          if (!fbHydrated) { fbHydrated = true; hydrateApps(); }
-        } else {
-          fbHydrated = false;
-          showLogin();
-        }
-      });
-    } else if (isAuthed()) {
-      showApp();
+          hydrateApps();
+        })
+        .catch((e) => {
+          if (String(e && e.message) === 'unauth') {
+            try { localStorage.removeItem(AUTH_KEY); } catch (err) { /* ignore */ }
+            showLogin();
+            applyLockUI();
+          } else {
+            showApp();
+            hydrateApps();
+          }
+        });
     } else {
       showLogin();
       applyLockUI();

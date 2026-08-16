@@ -38,18 +38,19 @@ node server.js
 | ส่วน | ใช้ | หมายเหตุ |
 |---|---|---|
 | หน้าเว็บ (admin.html + PWA) | **Cloudflare Pages** | ฟรี + HTTPS + deploy อัตโนมัติจาก GitHub |
-| ข้อมูลลูกค้า | **Firebase Realtime Database** | ซิงค์เรียลไทม์ทุกเครื่อง |
-| ล็อกอินแอดมิน | **Firebase Authentication** (อีเมล/รหัส) | ปลอดภัย เปลี่ยนรหัสได้ที่คอนโซล |
+| ข้อมูลลูกค้า | **Cloudflare KV** (Worker) | ข้อมูลในคลาวด์ ซิงค์ทุกเครื่อง |
+| ล็อกอินแอดมิน | **Cloudflare Worker** (username/รหัส) | ปลอดภัย (PBKDF2) เปลี่ยนรหัสได้ที่หน้า UI |
 
-### ตั้งค่า Firebase (ครั้งแรกครั้งเดียว)
+คำขอ `/api/*` บนหน้าเว็บจะถูก proxy ไปที่ Cloudflare Worker (`moneyfast-api`) — ทุกอย่างอยู่ใน Cloudflare หมด ไม่มี Firebase
 
-1. สร้างโปรเจกต์ที่ https://console.firebase.google.com
-2. เปิด **Realtime Database** (region `asia-southeast1`)
-3. เปิด **Authentication** → Sign-in method → **Email/Password** → Save
-4. ตั้งค่าโปรเจกต์ ⚙ → ทั่วไป → แอปของคุณ → กด `</>` (Web) → สร้างแอป → คัดลอกค่า `apiKey` + ที่เหลือ ใส่ใน `admin.html` บล็อก `FB_CONFIG`
-5. สร้างบัญชีแอดมิน: **Authentication → Users → Add user** (อีเมล + รหัส)
+### ตั้งค่า backend (ครั้งแรกครั้งเดียว)
 
-> ข้อมูล/ล็อกอินอยู่ที่ Firebase เสมอ — เว็บอยู่ที่ Cloudflare หรือที่ไหนก็เห็นข้อมูลชุดเดียวกัน
+1. สร้าง Cloudflare Worker + KV namespace (ดู `worker/`)
+2. deploy Worker: `cd worker && npx wrangler deploy`
+3. เขียนบัญชีแอดมิน + ย้ายข้อมูล: `node tools/setup-cloudflare-kv.js`
+4. `_redirects` ใน `tools/build-cloudflare.js` ชี้ `/api/*` ไปที่ Worker แล้ว
+
+> ล็อกอินเริ่มต้น: `admin` / `123456` — เปลี่ยนได้ที่หน้า UI (⚙️ ตั้งค่ารหัสผ่าน)
 
 ### อัปเดตเว็บ (อัตโนมัติ)
 
@@ -67,7 +68,7 @@ node server.js
 > ทำหลังเว็บอัปโหลดขึ้นอินเทอร์เน็ตแล้ว (HTTPS)
 
 1. เปิด **Safari** บน iPhone
-2. พิมพ์ URL หน้าแอดมิน เช่น `https://moneyfast.onrender.com/admin.html`
+2. พิมพ์ URL หน้าแอดมิน: `https://moneyfast.pages.dev`
 3. ล็อกอินให้เห็นหน้าแอดมิน (หน้าไหนก็ได้)
 4. แตะปุ่ม **Share** (กล่องสี่เหลี่ยมมีลูกศรขึ้น — แถวล่างกลางจอ)
 5. เลื่อนหา **Add to Home Screen** (เพิ่มไปยังหน้าจอโฮม) แล้วแตะ
@@ -123,33 +124,33 @@ git push -u origin main
 ## 🗂 โครงสร้างไฟล์
 
 ```
-├── admin.html          # หน้าแอดมิน (ตัวระบบทั้งหมด — รองรับทั้งโหมดเครื่องเดียว/โหมด Firebase)
-├── server.js           # เซิร์ฟเวอร์ Node ใช้รันในเครื่อง (ทดสอบ/บ้าน) — ข้อมูลลง data/apps.json
-├── data/apps.json      # ฐานข้อมูลลูกค้า (ใช้กับ server.js เท่านั้น)
-├── firebase.json       # คอนฟิก deploy ขึ้น Firebase (hosting + กฎ RTDB)
-├── database.rules.json # กฎ Realtime Database (เฉพาะผู้ล็อกอินแล้วเข้าถึง /apps)
-├── functions/          # (สำรอง) Cloud Functions — ใช้เมื่ออัปเกรดเป็น Blaze เท่านั้น
-│   └── index.js
+├── admin.html          # หน้าแอดมิน (ตัวระบบทั้งหมด — ข้อมูล/ล็อกอินผ่าน Cloudflare API)
+├── server.js           # เซิร์ฟเวอร์ Node ใช้รันในเครื่อง (ทดสอบ) — ข้อมูลลง data/apps.json
+├── data/apps.json      # ฐานข้อมูลลูกค้า (ใช้กับ server.js ในเครื่องเท่านั้น)
+├── worker/             # หลังบ้าน Cloudflare: Worker + wrangler.toml
+│   ├── wrangler.toml   # คอนฟิก Worker + KV binding
+│   └── src/index.js    # API: login / me / apps / password (PBKDF2 + session token)
 ├── manifest.json       # PWA manifest
 ├── sw.js               # Service Worker (offline + ติดตั้งหน้าจอ)
 ├── icon-192.png        # ไอคอน PWA
 ├── icon-512.png        # ไอคอน PWA
 ├── apple-touch-icon.png# ไอคอนสำหรับ iPhone
-├── tools/make-icons.js # สคริปต์สร้างไอคอนใหม่ (node tools/make-icons.js)
-└── tools/migrate-firebase.js # สคริปต์ย้ายข้อมูล apps.json ขึ้น Firebase
+├── tools/build-cloudflare.js # สร้างโฟลเดอร์ deploy-ready → dist/cloudflare (รวม proxy /api/*)
+├── tools/setup-cloudflare-kv.js # เขียนบัญชีแอดมิน + ย้ายข้อมูลขึ้น KV
+└── tools/make-icons.js # สคริปต์สร้างไอคอนใหม่ (node tools/make-icons.js)
 ```
 
 ---
 
 ## 💾 สำรองข้อมูล
 
-- **ใช้ server.js ในเครื่อง:** ข้อมูลทั้งหมดอยู่ในไฟล์เดียว `data/apps.json` — คัดลอกไฟล์นี้ไว้เป็น backup ก็พอ (หรือกดปุ่มส่งออก CSV)
-- **ใช้ Firebase:** ข้อมูลอยู่ใน Realtime Database — ดาวน์โหลดได้จากคอนโซล Firebase (Realtime Database → Export JSON) หรือกดส่งออก CSV ในหน้าแอดมิน
+- ข้อมูลทั้งหมดอยู่ใน **Cloudflare KV** (key `apps`) — สำรองได้ด้วย: Cloudflare Dashboard → Workers & Pages → KV → namespace → Export (หรือกดปุ่มส่งออก CSV ในหน้าแอดมิน)
+- ถ้าใช้ server.js ในเครื่อง: ข้อมูลอยู่ใน `data/apps.json`
 
 ---
 
 ## ⚠️ ข้อควรรู้
 
-- ข้อมูลซิงค์ข้ามเครื่องผ่าน Firebase (ล่าสุดชนะ) — เหมาะกับแอดมินคนเดียวใช้หลายเครื่อง
-- ถ้า Firebase ออฟไลน์ หน้าแอดมินจะสลับเป็น "โหมดเครื่องเดียว" (เก็บในเครื่องนั้น) อัตโนมัติ พร้อมแจ้งเตือน 🔴
+- ข้อมูลซิงค์ข้ามเครื่องผ่าน Cloudflare (ล่าสุดชนะ) — เหมาะกับแอดมินคนเดียวใช้หลายเครื่อง
+- ถ้าเน็ตขัดข้อง หน้าแอดมินจะใช้ข้อมูล cache ในเครื่องนั้นแทน พร้อมแจ้งเตือน 🔴
 - ใช้งานบนมือถือ: แนะนำติดตั้ง **PWA** (Safari → Add to Home Screen) — ไม่หมดอายุ ไม่ต้องเสียบสาย

@@ -18,7 +18,6 @@ const FILES = [
   'apple-touch-icon.png',
 ];
 const DIRS = [
-  'vendor/firebase',
   'vendor/fonts',
 ];
 
@@ -62,8 +61,12 @@ fs.writeFileSync(path.join(OUT, '_headers'), [
   '',
 ].join('\n'));
 
-/* _redirects — เสิร์ฟ admin.html ที่ root (เหมือน Firebase rewrites) */
-fs.writeFileSync(path.join(OUT, '_redirects'), '/ /admin.html 200\n');
+/* _redirects — เสิร์ฟ admin.html ที่ root + proxy คำขอ /api/* ไปที่ Cloudflare Worker (หลังบ้าน) */
+fs.writeFileSync(path.join(OUT, '_redirects'), [
+  '/api/* https://moneyfast-api.moneyfast-app.workers.dev/api/:splat 200',
+  '/ /admin.html 200',
+  '',
+].join('\n'));
 
 console.log('✅ สร้างโฟลเดอร์ deploy-ready:', OUT);
 console.log('   ไฟล์ทั้งหมด:', count, 'ไฟล์ + _headers + _redirects');
