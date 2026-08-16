@@ -1,8 +1,8 @@
 /* MoneyFast PWA Service Worker (Vue app)
    หน้าเว็บ: network-first (ได้เวอร์ชันใหม่เสมอ)
    ไฟล์ static: cache-first (โหลดเร็ว + ใช้ offline ได้) */
-/* v10: ย้ายจาก v9 — กันจอขาว: API timeout + fonts.css ไม่บล็อก render (ล้าง cache เก่าทุกเครื่อง) */
-const CACHE = 'moneyfast-v10';
+/* v11: ย้ายจาก v10 — รองรับเบราว์เซอร์เก่า (es2018) + fallback กันจอขาว (ล้าง cache เก่าทุกเครื่อง) */
+const CACHE = 'moneyfast-v11';
 const CORE = [
   './',
   './index.html',
