@@ -79,23 +79,29 @@ onMounted(async () => {
   document.documentElement.lang = langState.lang;
   document.title = t('title');
 
-  if (isAuthed()) {
-    try {
-      await apiMe();
-      store.authed = true;
-      await hydrateApps();
-    } catch (e) {
-      if (e && e.unauth) {
-        clearToken();
-        store.authed = false;
-      } else {
-        // เน็ตขัดข้อง → เข้าระบบชั่วคราวด้วยข้อมูล cache
+  /* fail-open: ถ้า API ค้างเกินกำหนด ให้แสดงหน้า UI ทันที (กันจอขาวค้างตลอด) */
+  const failOpen = setTimeout(() => { store.loading = false; }, 12000);
+  try {
+    if (isAuthed()) {
+      try {
+        await apiMe();
         store.authed = true;
         await hydrateApps();
+      } catch (e) {
+        if (e && e.unauth) {
+          clearToken();
+          store.authed = false;
+        } else {
+          // เน็ตขัดข้อง/API ค้าง → เข้าระบบชั่วคราวด้วยข้อมูล cache
+          store.authed = true;
+          await hydrateApps();
+        }
       }
     }
+  } finally {
+    clearTimeout(failOpen);
+    store.loading = false;
   }
-  store.loading = false;
 });
 
 onMounted(() => document.addEventListener('keydown', onKeydown));

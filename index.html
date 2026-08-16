@@ -174,7 +174,9 @@
     } catch (e) {}
   })();
   </script>
-  <link rel="stylesheet" href="/fonts/fonts.css" id="fonts-css">
+  <!-- fonts.css โหลดแบบไม่บล็อกการ render (media=print trick) — กันจอขาวเมื่อ request ฟอนต์ค้าง -->
+  <link rel="stylesheet" href="/fonts/fonts.css" id="fonts-css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="/fonts/fonts.css"></noscript>
 </head>
 <body>
   <div id="app"></div>

@@ -1,6 +1,6 @@
 /* ===== ข้อมูลลูกค้า: เซิร์ฟเวอร์ (ซิงค์ข้ามเครื่อง) + สำรอง localStorage ตอน offline ===== */
 import { store } from './store.js';
-import { API_BASE, getToken } from './api.js';
+import { API_BASE, getToken, fetchT } from './api.js';
 import { t } from './i18n.js';
 import { buildCsv } from './logic.js';
 
@@ -27,7 +27,7 @@ export function saveApps(list) {
   store.apps = list;
   if (store.apiOk && store.memApps) {
     store.memApps = list;
-    fetch(API_BASE + '/apps', {
+    fetchT(API_BASE + '/apps', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
       body: JSON.stringify(list),
@@ -49,7 +49,7 @@ export function saveApps(list) {
 
 export async function hydrateApps() {
   try {
-    const res = await fetch(API_BASE + '/apps', { headers: { 'Authorization': 'Bearer ' + getToken() } });
+    const res = await fetchT(API_BASE + '/apps', { headers: { 'Authorization': 'Bearer ' + getToken() } });
     if (!res.ok) throw new Error('api');
     const serverList = await res.json();
     store.memApps = Array.isArray(serverList) ? serverList : [];

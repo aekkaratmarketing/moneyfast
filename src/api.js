@@ -21,8 +21,20 @@ export function isLocked() { return getLockUntil() > Date.now(); }
 export function setLock() { try { localStorage.setItem(LOCK_KEY, String(Date.now() + LOCK_MS)); } catch (e) { /* ignore */ } }
 export function clearLock() { try { localStorage.removeItem(LOCK_KEY); } catch (e) { /* ignore */ } }
 
+/* fetch พร้อม timeout — กันแอปค้างจอขาวเมื่อเน็ตช้า/ค้าง (AbortController) */
+export const FETCH_TIMEOUT_MS = 8000;
+export async function fetchT(url, opts = {}) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...opts, signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function apiLogin(username, password) {
-  const res = await fetch(API_BASE + '/login', {
+  const res = await fetchT(API_BASE + '/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: username, password: password }),
@@ -31,7 +43,7 @@ export async function apiLogin(username, password) {
 }
 
 export async function apiMe() {
-  const res = await fetch(API_BASE + '/me', { headers: { 'Authorization': 'Bearer ' + getToken() } });
+  const res = await fetchT(API_BASE + '/me', { headers: { 'Authorization': 'Bearer ' + getToken() } });
   if (!res.ok) {
     const err = new Error('unauth');
     err.unauth = true;
@@ -41,7 +53,7 @@ export async function apiMe() {
 }
 
 export async function apiPassword(current, next) {
-  const res = await fetch(API_BASE + '/password', {
+  const res = await fetchT(API_BASE + '/password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
     body: JSON.stringify({ current: current, next: next }),
