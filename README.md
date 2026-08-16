@@ -132,6 +132,19 @@ node tools/build-cloudflare.js
 - ตั้งค่า Environment variables ถ้าเป็น private repo (ไม่จำเป็นสำหรับ public)
 - จากนี้ push ทุกครั้ง → Cloudflare build + deploy ให้อัตโนมัติ
 
+**อีกทางเลือก — deploy อัตโนมัติผ่าน GitHub Actions (workflow ที่เตรียมไว้ให้)**
+
+มี workflow `Deploy to Cloudflare Pages` พร้อมแล้ว — push ไฟล์เว็บขึ้น main เมื่อไหร่ build + deploy ให้อัตโนมัติ ตั้งค่า 1 ครั้ง:
+
+1. **สร้าง API Token** ที่ Cloudflare: dash.cloudflare.com → **My Profile → API Tokens → Create Token** → เลือกเทมเพลต **"Edit Cloudflare Workers"** → เปลี่ยนสิทธิ์เป็น **Account → Cloudflare Pages → Edit** → Continue → Create → คัดลอก token
+2. **หา Account ID**: หน้าแรก dash.cloudflare.com → แถบขวา **Account ID** (เลขยาวๆ)
+3. **เพิ่ม secrets ใน GitHub**: repo `moneyfast` → **Settings → Secrets and variables → Actions → New repository secret**:
+   - `CLOUDFLARE_API_TOKEN` = token จากข้อ 1
+   - `CLOUDFLARE_ACCOUNT_ID` = Account ID จากข้อ 2
+4. push โค้ดขึ้น main → ไป **Actions** → เห็นงาน `Deploy to Cloudflare Pages` → ✅ เสร็จ เปิด `https://moneyfast.pages.dev`
+
+> ครั้งแรก wrangler จะ**สร้างโปรเจกต์ `moneyfast` บน Cloudflare ให้อัตโนมัติ** (ถ้ายังไม่มี) — ถ้าสร้างผ่าน Dashboard ไว้แล้วจะอัปเดตเข้าโปรเจกต์เดิม
+
 **ขั้นที่ 4 — ใช้โดเมนของตัวเอง (ไม่บังคับ)**
 
 - Cloudflare → โปรเจกต์ → **Custom domains** → ใส่โดเมน (เช่น `admin.moneyfast.la`) → ตั้ง DNS ตามที่บอก — ฟรีไม่เสียเงิน
