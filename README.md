@@ -171,15 +171,15 @@ node tools/build-cloudflare.js
 
 ---
 
-## 🐙 อัปโหลดขึ้น GitHub + build .ipa อัตโนมัติ (ฟรี)
+## 🐙 อัปโหลดขึ้น GitHub (สำหรับ deploy อัตโนมัติ)
 
-> ใช้ **GitHub Actions** — GitHub มีเครื่อง Mac ให้ build ฟรี (โฟลเดอร์ส่วนตัว 2,000 นาที/เดือน, โฟลเดอร์สาธารณะไม่จำกัด) ไม่ต้องมี Mac เอง
+> โฟลเดอร์นี้ต่อกับ GitHub ไว้สำหรับ **deploy เว็บขึ้น Cloudflare Pages อัตโนมัติ** (ดูหัวข้อ Cloudflare ด้านบน) — push โค้ดขึ้น main เมื่อไหร่ build + deploy ให้ทันที
 
 **ขั้นที่ 1 — สร้าง repo บน GitHub** (ในเบราว์เซอร์)
 
 1. ไปที่ https://github.com/new
 2. ตั้งชื่อ repo เช่น `moneyfast`
-3. เลือก **Public** (ได้ build ไม่จำกัดนาที) — หรือ Private ก็ได้ (ฟรี 2,000 นาที/เดือน)
+3. เลือก **Public** หรือ Private ก็ได้
 4. **อย่า**ติ๊ก "Add a README / .gitignore" (มีในโฟลเดอร์แล้ว) → กด **Create repository**
 
 **ขั้นที่ 2 — push โฟลเดอร์โปรเจกต์ขึ้น repo** (รันในโฟลเดอร์โปรเจกต์)
@@ -187,28 +187,13 @@ node tools/build-cloudflare.js
 ```bash
 git init
 git add -A
-git commit -m "MoneyFast admin + PWA + iOS build workflow"
+git commit -m "MoneyFast admin + PWA"
 git branch -M main
 git remote add origin https://github.com/<ชื่อคุณ>/moneyfast.git
 git push -u origin main
 ```
 
-> 🔒 `.gitignore` ปิดของสำคัญอัตโนมัติแล้ว: `data/` (ข้อมูลลูกค้า), ไฟล์คีย์ Service Account, `node_modules/`, `.ipa` — ตรวจก่อน push ได้ด้วยคำสั่ง `git status`
-
-**ขั้นที่ 3 — รอ workflow build .ipa (อัตโนมัติ ~5-8 นาที)**
-
-- เปิด repo บน GitHub → แถบ **Actions** → เห็นงาน `Build iOS .ipa` รันอยู่ → รอจนเป็น ✅
-- workflow ทำงานอัตโนมัติทุกครั้งที่แก้ `admin.html` / `sw.js` / `manifest.json` / ไอคอน / `ios/**` แล้ว push — หรือกดปุ่ม **Run workflow** เองก็ได้
-
-**ขั้นที่ 4 — ดาวน์โหลด .ipa**
-
-1. ในหน้าของงานที่ ✅ → เลื่อนลงล่างสุด → หัวข้อ **Artifacts**
-2. กดดาวน์โหลด `MoneyFast-ipa` → ได้ zip → แตกได้ไฟล์ `MoneyFast.ipa`
-
-**ขั้นที่ 5 — ลง iPhone (sideload ฟรี)**
-
-- ใช้ **Sideloadly** (Windows/Mac) หรือ **AltStore** — เสียบ iPhone กับคอม → ลาก `.ipa` ไปวาง → ใส่ Apple ID → ลงได้เลย
-- ⚠️ วิธีฟรีลงได้ **7 วัน** หมดอายุต้องเสียบสายต่ออายุใหม่ — ถ้าอยากได้แบบถาวร/App Store ต้อง Apple Developer ($99/ปี) + เพิ่ม signing certificate ใน workflow
+> 🔒 `.gitignore` ปิดของสำคัญอัตโนมัติแล้ว: `data/` (ข้อมูลลูกค้า), ไฟล์คีย์ Service Account, `node_modules/` — ตรวจก่อน push ได้ด้วยคำสั่ง `git status`
 
 ---
 
@@ -256,6 +241,6 @@ git push -u origin main
 
 ## ⚠️ ข้อควรรู้
 
-- ข้อมูลซิงค์ข้ามเครื่องผ่านเซิร์ฟเวอร์ (ล่าสุดชนะ) — เหมาะกับแอดมินคนเดียวใช้หลายเครื่อง
-- ถ้าเซิร์ฟเวอร์ล่ม หน้าแอดมินจะสลับเป็น "โหมดเครื่องเดียว" (เก็บในเครื่องนั้น) อัตโนมัติ พร้อมแจ้งเตือน 🔴
-- ต้องการ .ipa: build ฟรีได้ผ่าน GitHub Actions (ดูหัวข้ออัปโหลดขึ้น GitHub) แต่ลง iPhone แบบฟรีหมดอายุทุก 7 วัน (Sideloadly/AltStore) — แบบถาวร/App Store ต้อง Apple Developer ($99/ปี)
+- ข้อมูลซิงค์ข้ามเครื่องผ่าน Firebase (ล่าสุดชนะ) — เหมาะกับแอดมินคนเดียวใช้หลายเครื่อง
+- ถ้า Firebase ออฟไลน์ หน้าแอดมินจะสลับเป็น "โหมดเครื่องเดียว" (เก็บในเครื่องนั้น) อัตโนมัติ พร้อมแจ้งเตือน 🔴
+- ใช้งานบนมือถือ: แนะนำติดตั้ง **PWA** (Safari → Add to Home Screen) — ไม่หมดอายุ ไม่ต้องเสียบสาย
