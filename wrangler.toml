@@ -3,7 +3,7 @@ pages_build_output_dir = "dist/cloudflare"
 compatibility_date = "2025-01-01"
 
 [vars]
-ALLOWED_ORIGINS = "https://moneyfast.pages.dev,http://127.0.0.1:8321,http://localhost:8321,http://127.0.0.1:8788,http://localhost:8788"
+ALLOWED_ORIGINS = "https://moneyfast.pages.dev,https://moneyfast.eu.org,http://127.0.0.1:8321,http://localhost:8321,http://127.0.0.1:8788,http://localhost:8788"
 
 [[kv_namespaces]]
 binding = "MONEYFAST_KV"
