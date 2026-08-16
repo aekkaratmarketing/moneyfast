@@ -16,8 +16,8 @@
   --blue: #2563eb;
   --radius: 16px;
   --shadow: 0 12px 30px rgba(10, 70, 38, 0.1);
-  --font: 'Kanit', system-ui, sans-serif;
-  --font-lo: 'Noto Sans Lao', 'Kanit', system-ui, sans-serif;
+  --font: 'Prompt', system-ui, sans-serif;
+  --font-lo: 'Noto Sans Lao', 'Prompt', system-ui, sans-serif;
   color-scheme: light;
 }
 
@@ -536,7 +536,7 @@ a { text-decoration: none; color: inherit; }
 [data-theme="dark"] .form-summary { background: #2a2412; }
 [data-theme="dark"] .up-item { border-color: var(--line); }
 
-/* ===== ฟ้อนต์บางลง (Kanit Light) ===== */
+/* ===== ฟ้อนต์บางลง (Prompt Light) ===== */
 body { font-weight: 300; }
 .logo, .login-logo, .login-card h2, .login-card .field label,
 .page-head h1, .stat .st-num, .st-title, .ai-name,

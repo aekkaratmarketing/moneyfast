@@ -18,9 +18,7 @@ const FILES = [
   'icon-512.png',
   'apple-touch-icon.png',
 ];
-const DIRS = [
-  'vendor/fonts',
-];
+const DIRS = [];
 /* Pages Functions — หลังบ้าน /api/* */
 const FUNCS_DIR = 'functions';
 

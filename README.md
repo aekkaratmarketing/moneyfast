@@ -183,8 +183,8 @@ git push -u origin main
 ├── sw.js                       # Service Worker (offline + ติดตั้งลงหน้าจอ)
 ├── icon-192.png / icon-512.png # ไอคอน PWA
 ├── apple-touch-icon.png        # ไอคอนสำหรับ iPhone
-├── public/fonts/               # ฟอนต์ Kanit + Noto Sans Lao (self-host — โหลดจาก /fonts/ ไม่ผ่าน bundle)
-├── vendor/fonts/               # ฟอนต์ชุดเดียวกัน (สำรองสำหรับ admin.html เวอร์ชันเก่า)
+├── public/fonts/               # ฟอนต์ Prompt + Noto Sans Lao (self-host — โหลดจาก /fonts/ ไม่ผ่าน bundle)
+├── vendor/fonts/               # ฟอนต์ Kanit ชุดเก่า (ของ admin.html เวอร์ชัน legacy — ไม่ได้ deploy แล้ว)
 ├── tools/
 │   ├── build-cloudflare.js     # ประกอบ deploy-ready → dist/cloudflare (static + functions + _headers/_redirects)
 │   ├── setup-cloudflare-kv.js  # สร้างบัญชีแอดมิน (PBKDF2) + ย้ายข้อมูลขึ้น KV

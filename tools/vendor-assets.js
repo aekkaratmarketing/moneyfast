@@ -1,14 +1,15 @@
 /* ดาวน์โหลด asset ที่เคยโหลดจาก CDN ภายนอก มาไว้ในโปรเจกต์เอง
    - Firebase JS SDK 11.6.0 (app/auth/database compat) → vendor/firebase/
-   - ฟอนต์ Kanit + Noto Sans Lao (CSS + WOFF2) → public/fonts/  (vite คัดลอก public/ เข้า build อัตโนมัติ)
+   - ฟอนต์ Prompt + Noto Sans Lao (CSS + WOFF2) → public/fonts/  (vite คัดลอก public/ เข้า build อัตโนมัติ)
    ใช้: node tools/vendor-assets.js
 */
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
-const zlib = require('zlib');
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
+import zlib from 'zlib';
+import { fileURLToPath } from 'url';
 
-const ROOT = path.join(__dirname, '..');
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
 
 function get(url, acceptGzip = false) {
@@ -50,7 +51,7 @@ function save(dir, name, data) {
 
   /* ===== 2. ฟอนต์ ===== */
   const fontDir = path.join(ROOT, 'public', 'fonts');
-  const cssUrl = 'https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Noto+Sans+Lao:wght@300;400;500;600;700;800&display=swap';
+  const cssUrl = 'https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=Noto+Sans+Lao:wght@300;400;500;600;700;800&display=swap';
   const css = await get(cssUrl);
   if (css.status !== 200) { console.log('❌ ฟอนต์ CSS ล้ม:', css.status); process.exit(1); }
   const cssText = css.body.toString('utf8');

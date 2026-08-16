@@ -1,8 +1,8 @@
 /* MoneyFast PWA Service Worker (Vue app)
    หน้าเว็บ: network-first (ได้เวอร์ชันใหม่เสมอ)
    ไฟล์ static: cache-first (โหลดเร็ว + ใช้ offline ได้) */
-/* v8: ย้ายจาก v7 — ล้าง cache เก่าทุกเครื่อง + ฟอนต์ใน build ใหม่โหลดจาก /assets/ (ไม่ใช่ vendor/fonts) */
-const CACHE = 'moneyfast-v8';
+/* v9: ย้ายจาก v8 — เปลี่ยนฟอนต์ Kanit → Prompt (ล้าง cache เก่าทุกเครื่อง ให้โหลด /fonts/ ใหม่) */
+const CACHE = 'moneyfast-v9';
 const CORE = [
   './',
   './index.html',
