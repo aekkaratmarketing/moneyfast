@@ -1,11 +1,10 @@
-/* MoneyFast PWA Service Worker
-   ໜ້າເວັບ: network-first (ໄດ້ເວີຊັນໃໝ່ສະເໝີ)
-   ໄຟລ໌ static: cache-first (ໂຫຼດໄວ + ໃຊ້ງານ offline ໄດ້)
-   หน้าเว็บ: network-first (ได้เวอร์ชันใหม่เสมอ) / ไฟล์ static: cache-first (โหลดเร็ว + ใช้ offline ได้) */
-const CACHE = 'moneyfast-v5';
+/* MoneyFast PWA Service Worker (Vue app)
+   หน้าเว็บ: network-first (ได้เวอร์ชันใหม่เสมอ)
+   ไฟล์ static: cache-first (โหลดเร็ว + ใช้ offline ได้) */
+const CACHE = 'moneyfast-v7';
 const CORE = [
   './',
-  './admin.html',
+  './index.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -32,7 +31,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  // ຄຳຂໍ API: ບໍ່ cache (ຕ້ອງໄດ້ຂໍ້ມູນສົດສະເໝີ) / คำขอ API: ไม่ cache (ต้องได้ข้อมูลสดเสมอ)
+  // คำขอ API: ไม่ cache (ต้องได้ข้อมูลสดเสมอ)
   if (req.url.includes('/api/')) return;
 
   // หน้าเว็บ: network-first — อัปเดตใหม่เสมอ ถ้า offline ค่อยใช้ cache
@@ -40,12 +39,15 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
+          // เก็บ cache เฉพาะหน้าที่สำเร็จ (ไม่ให้ 404 ติดค้าง)
+          if (res && res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
           return res;
         })
         .catch(() =>
-          caches.match(req).then((hit) => hit || caches.match('./admin.html'))
+          caches.match(req).then((hit) => hit || caches.match('./index.html'))
         )
     );
     return;

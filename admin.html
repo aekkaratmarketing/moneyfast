@@ -12,7 +12,170 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="vendor/fonts/fonts.css">
+  <!-- ===== MoneyFast Debug — เปิดด้วย ?debug=1 เพื่อดูว่าหน้าเว็บค้างที่ขั้นไหน (ใช้บนมือถือ) ===== -->
+  <script>
+  (function () {
+    try {
+      var t0 = Date.now();
+      function qp(name) {
+        var m = location.search.match(new RegExp('[?&]' + name + '=([^&]*)'));
+        return m ? decodeURIComponent(m[1]) : null;
+      }
+      var ON = qp('debug') === '1';
+      var stages = {};
+      var errors = [];
+      var seq = [];
+      function rec(name, ok, msg) {
+        if (!stages[name]) stages[name] = { t: Date.now() - t0, ok: null, msg: '' };
+        if (ok !== undefined) stages[name].ok = ok;
+        if (msg !== undefined) stages[name].msg = msg;
+        if (seq.indexOf(name) < 0) seq.push(name);
+        if (ON) paint();
+      }
+      window.__dbg = {
+        mark: function (name, msg) { try { rec(name, true, msg || ''); } catch (e) {} },
+        fail: function (name, msg) { try { rec(name, false, msg || ''); } catch (e) {} }
+      };
+      window.addEventListener('error', function (e) {
+        try { errors.push('JS error: ' + (e && e.message ? e.message : String(e))); if (ON) paint(); } catch (x) {}
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        try { errors.push('Promise error: ' + (e && e.reason ? String(e.reason) : 'unknown')); if (ON) paint(); } catch (x) {}
+      });
+      window.addEventListener('offline', function () { rec('net', false, 'เน็ตออฟไลน์'); });
+      window.addEventListener('online', function () { rec('net', true, 'เน็ตกลับมาแล้ว'); });
+
+      function hookCss() {
+        var link = document.getElementById('fonts-css');
+        if (!link) return;
+        link.addEventListener('load', function () { rec('css', true, 'CSS/ฟอนต์โหลดครบ'); });
+        link.addEventListener('error', function () { rec('css', false, 'CSS/ฟอนต์โหลดไม่สำเร็จ'); });
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookCss); else hookCss();
+
+      /* --- ตรวจของตัวเอง (ไม่พึ่งโค้ดหลักของแอป) --- */
+      setTimeout(function () { rec('html', true, 'หน้า HTML โหลดครบ'); }, 0);
+      try {
+        var lsOk = true, lsMsg = 'localStorage ใช้ได้';
+        try { localStorage.setItem('__dbg', '1'); localStorage.removeItem('__dbg'); }
+        catch (e) { lsOk = false; lsMsg = 'localStorage ถูกบล็อก (Private/การตั้งค่าเว็บไซต์)'; }
+        rec('ls', lsOk, lsMsg);
+      } catch (e) {}
+      try {
+        var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        rec('net', navigator.onLine !== false, navigator.onLine === false ? 'เน็ตออฟไลน์' : 'เน็ตออนไลน์' + (conn && conn.effectiveType ? ' (' + conn.effectiveType + ')' : ''));
+      } catch (e) {}
+      try {
+        if (typeof fetch !== 'function') {
+          rec('api', false, 'เบราว์เซอร์เก่าเกินไป (ไม่มี fetch)');
+        } else {
+          var token = '';
+          try { token = localStorage.getItem('moneyfast_auth') || ''; } catch (e) {}
+          fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } })
+            .then(function (r) {
+              var why = r.status === 401 ? 'ยังไม่ล็อกอิน = ปกติ' : (r.ok ? 'เชื่อมต่อสำเร็จ' : 'เซิร์ฟเวอร์ตอบ error');
+              rec('api', true, 'API ตอบ HTTP ' + r.status + ' (' + why + ')');
+            })
+            .catch(function (e) { rec('api', false, 'เชื่อมต่อ API ไม่ได้: ' + (e && e.message ? e.message : e)); });
+        }
+      } catch (e) { rec('api', false, 'API error: ' + e); }
+      try {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistration()
+            .then(function (reg) { rec('sw', true, reg && reg.active ? 'SW ลงทะเบียน + ทำงานแล้ว' : 'SW ยังไม่ได้ลงทะเบียน'); })
+            .catch(function (e) { rec('sw', false, 'SW error: ' + (e && e.message ? e.message : e)); });
+        } else {
+          rec('sw', false, 'เบราว์เซอร์ไม่รองรับ Service Worker');
+        }
+      } catch (e) {}
+
+      if (!ON) return; /* สร้างแผงเฉพาะเมื่อเปิดด้วย ?debug=1 */
+
+      function esc(s) {
+        return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+      var LABELS = { html: 'หน้า HTML', css: 'CSS/ฟอนต์', js: 'JS หลัก (เริ่ม)', 'js-done': 'JS หลัก (รันครบ)', net: 'เน็ต', ls: 'localStorage', api: 'API หลังบ้าน', sw: 'Service Worker' };
+      var wrap = document.createElement('div');
+      wrap.id = 'dbg-wrap';
+      wrap.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:2147483000;max-width:92vw;max-height:70vh;overflow:auto;background:rgba(8,18,13,.94);color:#eafff2;border:1px solid rgba(255,255,255,.25);border-radius:12px;padding:10px 12px;font:11px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.45);';
+      var head = document.createElement('div');
+      head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;';
+      head.innerHTML = '<b style="font-size:12px">🔍 MoneyFast Debug</b>';
+      var closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.textContent = '✕ ปิด';
+      closeBtn.style.cssText = 'border:none;background:rgba(255,255,255,.15);color:#fff;border-radius:8px;padding:2px 8px;font-size:11px;cursor:pointer;';
+      closeBtn.onclick = function () { wrap.style.display = 'none'; };
+      head.appendChild(closeBtn);
+      var list = document.createElement('div');
+      list.id = 'dbg-list';
+      var info = document.createElement('div');
+      info.style.cssText = 'margin-top:8px;font-size:10px;color:#9fd8b6;word-break:break-all;'; /* URL + UA */
+      var copyBtn = document.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.textContent = '📋 คัดลอกข้อมูล';
+      copyBtn.style.cssText = 'margin-top:8px;width:100%;border:none;background:rgba(255,255,255,.15);color:#fff;border-radius:8px;padding:6px;font-size:11px;cursor:pointer;';
+      copyBtn.onclick = copyReport;
+      function buildReport() {
+        var lines = [];
+        lines.push('MoneyFast Debug Report');
+        lines.push('URL: ' + location.href);
+        lines.push('เวลา: ' + new Date().toString());
+        lines.push('UA: ' + navigator.userAgent);
+        lines.push('--- สถานะ ---');
+        for (var i = 0; i < seq.length; i++) {
+          var n = seq[i], s = stages[n];
+          lines.push((LABELS[n] || n) + ': ' + (s.ok === null ? '⏳ ยังไม่จบ' : (s.ok ? '✅' : '❌')) + ' ' + s.msg + (s.t != null ? ' (' + s.t + 'ms)' : ''));
+        }
+        if (errors.length) {
+          lines.push('--- error ที่จับได้ ---');
+          for (var j = 0; j < errors.length; j++) lines.push(errors[j]);
+        }
+        return lines.join('\n');
+      }
+      function copyReport() {
+        var txt = buildReport();
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = txt;
+          ta.style.cssText = 'position:fixed;opacity:0;';
+          document.body.appendChild(ta);
+          ta.select();
+          var ok = false;
+          try { ok = document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          if (ok) { copyBtn.textContent = 'คัดลอกแล้ว ✓'; return; }
+        } catch (e) {}
+        var pre = document.createElement('textarea');
+        pre.readOnly = true;
+        pre.value = txt;
+        pre.style.cssText = 'width:100%;height:130px;margin-top:6px;font-size:10px;';
+        copyBtn.parentNode.insertBefore(pre, copyBtn.nextSibling);
+        copyBtn.textContent = 'กดค้างที่ช่องด้านล่างเพื่อคัดลอก';
+      }
+      function paint() {
+        var html = '';
+        for (var i = 0; i < seq.length; i++) {
+          var n = seq[i], s = stages[n];
+          var icon = s.ok === null ? '⏳' : (s.ok ? '✅' : '❌');
+          html += '<div style="' + (s.ok === false ? 'color:#ffb4b4;' : '') + '">' + icon + ' <b>' + esc(LABELS[n] || n) + '</b> <span style="color:#9fd8b6">' + esc(s.msg) + (s.t != null ? ' (' + s.t + 'ms)' : '') + '</span></div>';
+        }
+        if (errors.length) {
+          html += '<div style="margin-top:4px;color:#ffb4b4;word-break:break-all">⚠ ' + esc(errors[errors.length - 1]) + '</div>';
+        }
+        list.innerHTML = html;
+        info.textContent = location.href;
+      }
+      wrap.appendChild(head);
+      wrap.appendChild(list);
+      wrap.appendChild(info);
+      wrap.appendChild(copyBtn);
+      document.documentElement.appendChild(wrap);
+      paint();
+    } catch (e) {}
+  })();
+  </script>
+  <link rel="stylesheet" href="vendor/fonts/fonts.css" id="fonts-css">
   <style>
     /* ===== MoneyFast Admin ===== */
     :root {
@@ -61,7 +224,7 @@
     /* ແກ້ບັກ: ໃຫ້ attribute hidden ເຮັດວຽກກັບ CSS display / แก้บั๊ก: ให้ attribute hidden ทำงานกับ CSS display */
     [hidden] { display: none !important; }
 
-    body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.55; overflow-x: hidden; }
+    body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.55; overflow-x: hidden; padding-bottom: env(safe-area-inset-bottom); }
     html[lang="lo"] body { font-family: var(--font-lo); }
     img { max-width: 100%; }
     .ai-name, .ai-txt, .ai-line, .ci-name, .ci-profit, .ci-repay, .del-msg,
@@ -72,7 +235,7 @@
     a { text-decoration: none; color: inherit; }
 
     /* Navbar */
-    .navbar { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); transition: box-shadow .2s ease; }
+    .navbar { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,.94); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); transition: box-shadow .2s ease; padding-top: env(safe-area-inset-top); }
     .nav-inner { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding-top: 12px; padding-bottom: 12px; flex-wrap: wrap; }
     .logo { display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 21px; color: var(--green-text); }
     .logo-icon { font-size: 21px; }
@@ -916,6 +1079,7 @@
 
   <script>
     /* ===== MoneyFast Admin — ไทย / ລາວ ===== */
+    window.__dbg && window.__dbg.mark('js', 'เริ่มรัน JavaScript หลัก');
 
     const WEEKLY_RATE = 0.20;
     const MIN_AMOUNT = 100000;
@@ -2649,6 +2813,7 @@
       showLogin();
       applyLockUI();
     }
+    window.__dbg && window.__dbg.mark('js-done', 'JavaScript หลักรันครบ');
   </script>
 </body>
 </html>

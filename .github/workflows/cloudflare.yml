@@ -4,7 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'admin.html'
+      - 'index.html'
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.js'
       - 'manifest.json'
       - 'sw.js'
       - 'icon-*.png'
@@ -28,8 +32,11 @@ jobs:
         with:
           node-version: 24
 
+      - name: Install dependencies
+        run: npm ci
+
       - name: Build deploy-ready folder
-        run: node tools/build-cloudflare.js
+        run: npm run build
 
       - name: Deploy to Cloudflare Pages
         run: |

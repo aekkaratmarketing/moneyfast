@@ -73,7 +73,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     /* ---------- static files ---------- */
-    let f = path.join(ROOT, p === '/' ? 'admin.html' : p);
+    let f = path.join(ROOT, (p === '/' || p === '/admin' || p === '/admin/') ? 'admin.html' : p);
     if (!f.startsWith(ROOT)) { res.writeHead(403); res.end('forbidden'); return; }
     fs.readFile(f, (err, data) => {
       if (err) {

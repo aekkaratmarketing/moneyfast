@@ -3,7 +3,7 @@
   "short_name": "MoneyFast",
   "description": "ระบบหลังบ้านแอดมิน MoneyFast เงินด่วน",
   "lang": "th",
-  "start_url": "./admin.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
