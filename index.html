@@ -9,9 +9,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MoneyFast">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="icon-192.png">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <!-- ===== MoneyFast Debug — เปิดด้วย ?debug=1 เพื่อดูว่าหน้าเว็บค้างที่ขั้นไหน (ใช้บนมือถือ) ===== -->
   <script>
   (function () {
@@ -69,13 +69,18 @@
           rec('api', false, 'เบราว์เซอร์เก่าเกินไป (ไม่มี fetch)');
         } else {
           var token = '';
-          try { token = localStorage.getItem('moneyfast_auth') || ''; } catch (e) {}
-          fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } })
-            .then(function (r) {
-              var why = r.status === 401 ? 'ยังไม่ล็อกอิน = ปกติ' : (r.ok ? 'เชื่อมต่อสำเร็จ' : 'เซิร์ฟเวอร์ตอบ error');
-              rec('api', true, 'API ตอบ HTTP ' + r.status + ' (' + why + ')');
-            })
-            .catch(function (e) { rec('api', false, 'เชื่อมต่อ API ไม่ได้: ' + (e && e.message ? e.message : e)); });
+          try { token = localStorage.getItem('moneyfast_admin_auth') || ''; } catch (e) {}
+          if (!token) {
+            // ยังไม่ล็อกอิน → ไม่ยิง request (กัน error 401 ขึ้นใน console)
+            rec('api', true, 'ยังไม่ล็อกอิน — ข้ามการตรวจ API');
+          } else {
+            fetch('/api/me', { headers: { 'Authorization': 'Bearer ' + token } })
+              .then(function (r) {
+                var why = r.ok ? 'เชื่อมต่อสำเร็จ' : 'เซิร์ฟเวอร์ตอบ error (HTTP ' + r.status + ')';
+                rec('api', true, 'API ตอบ HTTP ' + r.status + ' (' + why + ')');
+              })
+              .catch(function (e) { rec('api', false, 'เชื่อมต่อ API ไม่ได้: ' + (e && e.message ? e.message : e)); });
+          }
         }
       } catch (e) { rec('api', false, 'API error: ' + e); }
       try {

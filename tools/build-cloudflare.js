@@ -10,13 +10,9 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(ROOT, 'dist', 'cloudflare');
 const APP = path.join(ROOT, 'dist', 'app'); // ผล build ของ vite
 
-/* ไฟล์ static ที่ต้อง deploy (vite สร้าง index.html + assets/ ให้แล้ว) */
+/* ไฟล์ static ที่ต้อง deploy (vite สร้าง index.html + assets/ + public/ ให้แล้ว — manifest/icon อยู่ใน public/) */
 const FILES = [
-  'manifest.json',
   'sw.js',
-  'icon-192.png',
-  'icon-512.png',
-  'apple-touch-icon.png',
 ];
 const DIRS = [];
 /* Pages Functions — หลังบ้าน /api/* */
