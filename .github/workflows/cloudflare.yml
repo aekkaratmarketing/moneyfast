@@ -11,6 +11,7 @@ on:
       - 'vite.config.js'
       - 'manifest.json'
       - 'sw.js'
+      - 'public/**'
       - 'icon-*.png'
       - 'apple-touch-icon.png'
       - 'vendor/**'

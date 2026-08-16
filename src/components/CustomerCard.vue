@@ -49,7 +49,7 @@ function openLightbox(src) { store.lightbox = src; }
         <button type="button" class="ai-edit" :aria-label="t('editAria')" @click="openEdit">✏️ {{ t('editBtn') }}</button>
         <a class="ai-wa" :href="toWaLink(app.phone)" target="_blank" rel="noopener">💬 {{ t('waBtn') }}</a>
         <a v-if="fbLink" class="ai-fb" :href="fbLink" target="_blank" rel="noopener">📘 {{ t('fbBtn') }}</a>
-        <button v-if="lc.done" type="button" class="ai-del" :aria-label="t('delAria')" @click="openDel">🗑 {{ t('delBtn') }}</button>
+        <button type="button" class="ai-del" :aria-label="t('delAria')" @click="openDel">🗑 {{ t('delBtn') }}</button>
       </div>
     </div>
   </div>

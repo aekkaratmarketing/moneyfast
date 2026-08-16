@@ -401,9 +401,9 @@ a { text-decoration: none; color: inherit; }
 .pay-history { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 12px; }
 .pay-history h4 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--green-text); }
 .pay-history-list { display: grid; gap: 6px; }
-.ph-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+.ph-item { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; text-align: center; }
 .ph-date { color: var(--muted); }
-.ph-nums { text-align: right; }
+.ph-nums { text-align: center; }
 .ph-nums b { color: var(--green-text); }
 .ph-nums .ph-i { color: var(--gold-dark); }
 .ph-nums .ph-p { color: var(--muted); }

@@ -1,6 +1,6 @@
 /* ดาวน์โหลด asset ที่เคยโหลดจาก CDN ภายนอก มาไว้ในโปรเจกต์เอง
    - Firebase JS SDK 11.6.0 (app/auth/database compat) → vendor/firebase/
-   - ฟอนต์ Kanit + Noto Sans Lao (CSS + WOFF2) → vendor/fonts/
+   - ฟอนต์ Kanit + Noto Sans Lao (CSS + WOFF2) → public/fonts/  (vite คัดลอก public/ เข้า build อัตโนมัติ)
    ใช้: node tools/vendor-assets.js
 */
 const fs = require('fs');
@@ -49,7 +49,7 @@ function save(dir, name, data) {
   }
 
   /* ===== 2. ฟอนต์ ===== */
-  const fontDir = path.join(ROOT, 'vendor', 'fonts');
+  const fontDir = path.join(ROOT, 'public', 'fonts');
   const cssUrl = 'https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&family=Noto+Sans+Lao:wght@300;400;500;600;700;800&display=swap';
   const css = await get(cssUrl);
   if (css.status !== 200) { console.log('❌ ฟอนต์ CSS ล้ม:', css.status); process.exit(1); }

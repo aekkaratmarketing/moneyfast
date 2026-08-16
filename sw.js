@@ -1,7 +1,8 @@
 /* MoneyFast PWA Service Worker (Vue app)
    หน้าเว็บ: network-first (ได้เวอร์ชันใหม่เสมอ)
    ไฟล์ static: cache-first (โหลดเร็ว + ใช้ offline ได้) */
-const CACHE = 'moneyfast-v7';
+/* v8: ย้ายจาก v7 — ล้าง cache เก่าทุกเครื่อง + ฟอนต์ใน build ใหม่โหลดจาก /assets/ (ไม่ใช่ vendor/fonts) */
+const CACHE = 'moneyfast-v8';
 const CORE = [
   './',
   './index.html',
@@ -9,7 +10,7 @@ const CORE = [
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
-  './vendor/fonts/fonts.css',
+  './fonts/fonts.css',
 ];
 
 self.addEventListener('install', (e) => {
