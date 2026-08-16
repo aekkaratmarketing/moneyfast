@@ -10,7 +10,11 @@
       "tools/**",
       "data/**",
       "server.js",
-      "README.md"
+      "README.md",
+      "ios/**",
+      ".github/**",
+      "*.sh",
+      "*.ipa"
     ],
     "rewrites": [
       { "source": "/", "destination": "/admin.html" }
