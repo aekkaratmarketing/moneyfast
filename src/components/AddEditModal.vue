@@ -92,7 +92,10 @@ function validate() {
     errors.amount = t('errAmount', { min: fmtKip(MIN_AMOUNT), max: fmtKip(MAX_AMOUNT) });
     ok = false;
   } else errors.amount = '';
-  if (!fromDateTimeInput(form.loanDate)) { errors.loanDate = t('errLoanDate'); ok = false; } else errors.loanDate = '';
+  const loanTs = fromDateTimeInput(form.loanDate);
+  if (!loanTs) { errors.loanDate = t('errLoanDate'); ok = false; }
+  else if (loanTs > Date.now()) { errors.loanDate = t('errLoanDateFuture'); ok = false; }
+  else errors.loanDate = '';
   return ok;
 }
 
@@ -232,7 +235,7 @@ function doSave() {
 
         <div class="field" :class="{ invalid: !!errors.loanDate }">
           <label for="a-loandate" v-html="t('lblLoanDate')"></label>
-          <input type="datetime-local" id="a-loandate" v-model="form.loanDate">
+          <input type="datetime-local" id="a-loandate" v-model="form.loanDate" :max="toDateTimeInput(Date.now())">
           <small class="error-msg">{{ errors.loanDate }}</small>
         </div>
 
