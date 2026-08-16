@@ -1,7 +1,9 @@
 /* ===== MoneyFast — ตรรกะล้วน (ย้ายจาก admin.html แบบคำต่อคำ) ===== */
 import { t, langState } from './i18n.js';
 
-export const WEEKLY_RATE = 0.20;
+export const WEEKLY_RATE = 0.20;          // ค่าเริ่มต้น (รายเก่าที่ไม่มี interestRate)
+export const INTEREST_RATES = [10, 15, 20, 25, 30];   // อัตราดอกเบี้ย % ต่อสัปดาห์ที่เลือกได้
+export const appRate = (app) => (Number((app && app.interestRate) || 20) || 20) / 100;
 export const MIN_AMOUNT = 100000;
 export const MAX_AMOUNT = 500000000;
 
@@ -15,12 +17,12 @@ export const fmtNum = (n) => new Intl.NumberFormat('en-US', { maximumFractionDig
 export const fmtKip = (n) => fmtNum(n) + ' ' + t('kip');
 export const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-/* ดอกเบี้ยทบรายสัปดาห์: ทุกสัปดาห์คิด 20% จากยอดต้นที่ค้างอยู่ จนกว่าจะชำระครบ */
+/* ดอกเบี้ยทบรายสัปดาห์: ทุกสัปดาห์คิดอัตรา (ค่าเริ่มต้น 20%) จากยอดต้นที่ค้างอยู่ จนกว่าจะชำระครบ */
 export function loanCalc(app, asOf) {
   asOf = asOf || Date.now();
   const original = Number(app.amount || 0);
   const start = Number(app.createdAt) || Number(app.statusChangedAt) || Date.now();
-  const RATE = WEEKLY_RATE;
+  const RATE = appRate(app);
   const WEEK = 7 * 24 * 60 * 60 * 1000;
   const all = (app.payments || []).filter((p) => Number(p.at || 0) <= asOf).sort((a, b) => a.at - b.at);
 

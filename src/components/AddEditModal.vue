@@ -2,12 +2,12 @@
 import { reactive, ref, computed, watch } from 'vue';
 import { store } from '../store';
 import { t } from '../i18n';
-import { MIN_AMOUNT, MAX_AMOUNT, fmtKip, fileToResizedDataUrl, toDateTimeInput, fromDateTimeInput } from '../logic';
+import { MIN_AMOUNT, MAX_AMOUNT, fmtKip, fileToResizedDataUrl, toDateTimeInput, fromDateTimeInput, INTEREST_RATES } from '../logic';
 import { getApps, saveApps, showToast } from '../apps';
 
 const MAX_IMAGES = 10;
 
-const form = reactive({ first: '', last: '', phone: '', fb: '', amount: '', loanDate: '' });
+const form = reactive({ first: '', last: '', phone: '', fb: '', amount: '', loanDate: '', rate: 20 });
 const images = ref([]);          // [{ name, dataUrl }]
 const errors = reactive({ first: '', last: '', phone: '', amount: '', loanDate: '', house: '' });
 const submitting = ref(false);
@@ -30,6 +30,7 @@ function initForm() {
     form.phone = app.phone || '';
     form.fb = app.fb || '';
     form.amount = app.amount || '';
+    form.rate = Number(app.interestRate) || 20;
     form.loanDate = toDateTimeInput(app.createdAt || Date.now());
     images.value = (Array.isArray(app.houseImages) ? app.houseImages : [])
       .map((h) => ({ name: (h && h.name) || '', dataUrl: (h && (h.dataUrl || h)) || '' }))
@@ -43,6 +44,7 @@ function initForm() {
     form.phone = '';
     form.fb = '';
     form.amount = '';
+    form.rate = 20;
     form.loanDate = toDateTimeInput(Date.now());
     images.value = [];
   }
@@ -55,6 +57,8 @@ const showSummary = computed(() => {
   const amount = Number(form.amount) || 0;
   return amount >= MIN_AMOUNT;
 });
+
+const ratePct = computed(() => Number(form.rate) || 20);
 
 async function onFiles(e) {
   const files = Array.from(e.target.files || []);
@@ -102,7 +106,7 @@ function validate() {
 function onSubmit() {
   if (!validate()) return;
   store.pendingSave = doSave;
-  store.pendingSaveInfo = { name: (form.first.trim() + ' ' + form.last.trim()), amount: Number(form.amount) || 0 };
+  store.pendingSaveInfo = { name: (form.first.trim() + ' ' + form.last.trim()), amount: Number(form.amount) || 0, rate: ratePct.value };
   store.modals.save = true;
 }
 
@@ -151,6 +155,7 @@ function doSave() {
         houseFileName: houseImages.length ? houseImages.map((h) => h.name).join(', ') : '',
         houseImages: houseImages,
         amount: amount,
+        interestRate: ratePct.value,
         createdAt: fromDateTimeInput(form.loanDate) || old.createdAt,
       });
       if (!saveWithQuotaFallback(list[idx])) return;
@@ -165,6 +170,7 @@ function doSave() {
       houseFileName: houseImages.length ? houseImages.map((h) => h.name).join(', ') : '',
       houseImages: houseImages,
       amount: amount,
+      interestRate: ratePct.value,
       createdAt: fromDateTimeInput(form.loanDate) || Date.now(),
     };
     list.unshift(app);
@@ -239,7 +245,14 @@ function doSave() {
           <small class="error-msg">{{ errors.loanDate }}</small>
         </div>
 
-        <div v-if="showSummary" class="form-summary show" v-html="t('formSummaryHtml', { principal: fmtKip(Number(form.amount)) })"></div>
+        <div class="field">
+          <label for="a-rate" v-html="t('lblRate')"></label>
+          <select id="a-rate" v-model="form.rate">
+            <option v-for="r in INTEREST_RATES" :key="r" :value="r">{{ r }}%</option>
+          </select>
+        </div>
+
+        <div v-if="showSummary" class="form-summary show" v-html="t('formSummaryHtml', { principal: fmtKip(Number(form.amount)), rate: ratePct })"></div>
 
         <div class="add-actions">
           <button type="button" class="btn btn-ghost2" @click="close">{{ t('addCancel') }}</button>

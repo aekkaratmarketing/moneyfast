@@ -54,6 +54,7 @@ function confirmDel() {
 const saveMsg = computed(() => t('saveMsgHtml', {
   name: esc((store.pendingSaveInfo && store.pendingSaveInfo.name) || ''),
   amount: fmtKip((store.pendingSaveInfo && store.pendingSaveInfo.amount) || 0),
+  rate: (store.pendingSaveInfo && store.pendingSaveInfo.rate) || 20,
 }));
 function confirmSave() {
   if (store.pendingSave) store.pendingSave();
