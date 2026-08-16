@@ -38,17 +38,17 @@ node server.js
 | ส่วน | ใช้ | หมายเหตุ |
 |---|---|---|
 | หน้าเว็บ (admin.html + PWA) | **Cloudflare Pages** | ฟรี + HTTPS + deploy อัตโนมัติจาก GitHub |
-| ข้อมูลลูกค้า | **Cloudflare KV** (Worker) | ข้อมูลในคลาวด์ ซิงค์ทุกเครื่อง |
-| ล็อกอินแอดมิน | **Cloudflare Worker** (username/รหัส) | ปลอดภัย (PBKDF2) เปลี่ยนรหัสได้ที่หน้า UI |
+| ข้อมูลลูกค้า | **Cloudflare KV** | ข้อมูลในคลาวด์ ซิงค์ทุกเครื่อง |
+| ล็อกอินแอดมิน | **Cloudflare Pages Functions** (username/รหัส) | ปลอดภัย (PBKDF2) เปลี่ยนรหัสได้ที่หน้า UI |
 
-คำขอ `/api/*` บนหน้าเว็บจะถูก proxy ไปที่ Cloudflare Worker (`moneyfast-api`) — ทุกอย่างอยู่ใน Cloudflare หมด ไม่มี Firebase
+คำขอ `/api/*` รันผ่าน **Pages Functions** (`functions/api/[[path]].js`) บนโดเมนเดียวกันกับหน้าเว็บ — ทุกอย่างอยู่ใน Cloudflare หมด ไม่มี Firebase
 
 ### ตั้งค่า backend (ครั้งแรกครั้งเดียว)
 
-1. สร้าง Cloudflare Worker + KV namespace (ดู `worker/`)
-2. deploy Worker: `cd worker && npx wrangler deploy`
-3. เขียนบัญชีแอดมิน + ย้ายข้อมูล: `node tools/setup-cloudflare-kv.js`
-4. `_redirects` ใน `tools/build-cloudflare.js` ชี้ `/api/*` ไปที่ Worker แล้ว
+1. สร้าง KV namespace ที่ Cloudflare Dashboard → Workers & Pages → KV → Create
+2. เอา namespace id ใส่ใน `wrangler.toml` (`kv_namespaces`)
+3. ผูก binding กับโปรเจกต์ Pages: Dashboard → โปรเจกต์ → Settings → Functions → KV namespace bindings → เพิ่ม `MONEYFAST_KV` (หรือผ่าน API)
+4. เขียนบัญชีแอดมิน + ย้ายข้อมูล: `CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... KV_NAMESPACE_ID=... node tools/setup-cloudflare-kv.js`
 
 > ล็อกอินเริ่มต้น: `admin` / `123456` — เปลี่ยนได้ที่หน้า UI (⚙️ ตั้งค่ารหัสผ่าน)
 
@@ -124,18 +124,17 @@ git push -u origin main
 ## 🗂 โครงสร้างไฟล์
 
 ```
-├── admin.html          # หน้าแอดมิน (ตัวระบบทั้งหมด — ข้อมูล/ล็อกอินผ่าน Cloudflare API)
+├── admin.html          # หน้าแอดมิน (ตัวระบบทั้งหมด — ข้อมูล/ล็อกอินผ่าน /api/*)
 ├── server.js           # เซิร์ฟเวอร์ Node ใช้รันในเครื่อง (ทดสอบ) — ข้อมูลลง data/apps.json
 ├── data/apps.json      # ฐานข้อมูลลูกค้า (ใช้กับ server.js ในเครื่องเท่านั้น)
-├── worker/             # หลังบ้าน Cloudflare: Worker + wrangler.toml
-│   ├── wrangler.toml   # คอนฟิก Worker + KV binding
-│   └── src/index.js    # API: login / me / apps / password (PBKDF2 + session token)
+├── functions/api/[[path]].js # Pages Function — หลังบ้าน /api/* (login / me / apps / password)
+├── wrangler.toml       # คอนฟิก Pages + KV binding (สำหรับ local dev / deploy)
 ├── manifest.json       # PWA manifest
 ├── sw.js               # Service Worker (offline + ติดตั้งหน้าจอ)
 ├── icon-192.png        # ไอคอน PWA
 ├── icon-512.png        # ไอคอน PWA
 ├── apple-touch-icon.png# ไอคอนสำหรับ iPhone
-├── tools/build-cloudflare.js # สร้างโฟลเดอร์ deploy-ready → dist/cloudflare (รวม proxy /api/*)
+├── tools/build-cloudflare.js # สร้างโฟลเดอร์ deploy-ready → dist/cloudflare (รวม functions/)
 ├── tools/setup-cloudflare-kv.js # เขียนบัญชีแอดมิน + ย้ายข้อมูลขึ้น KV
 └── tools/make-icons.js # สคริปต์สร้างไอคอนใหม่ (node tools/make-icons.js)
 ```

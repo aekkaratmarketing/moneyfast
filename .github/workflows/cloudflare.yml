@@ -10,6 +10,8 @@ on:
       - 'icon-*.png'
       - 'apple-touch-icon.png'
       - 'vendor/**'
+      - 'functions/**'
+      - 'wrangler.toml'
       - 'tools/build-cloudflare.js'
       - '.github/workflows/cloudflare.yml'
   workflow_dispatch:

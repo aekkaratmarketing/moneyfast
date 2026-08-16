@@ -20,6 +20,8 @@ const FILES = [
 const DIRS = [
   'vendor/fonts',
 ];
+/* Pages Functions — หลังบ้าน /api/* (รันบน Cloudflare เดียวกันกับหน้าเว็บ) */
+const FUNCS_DIR = 'functions';
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT, { recursive: true });
@@ -39,6 +41,20 @@ for (const d of DIRS) {
     fs.copyFileSync(path.join(srcDir, f), path.join(OUT, d, f));
     count++;
   }
+}
+/* คัดลอก functions/ (Pages Functions — หลังบ้าน /api/*) */
+const srcFuncs = path.join(ROOT, FUNCS_DIR);
+if (fs.existsSync(srcFuncs)) {
+  const walk = (dir, rel) => {
+    fs.mkdirSync(path.join(OUT, rel), { recursive: true });
+    for (const f of fs.readdirSync(dir)) {
+      const full = path.join(dir, f);
+      const r = path.join(rel, f);
+      if (fs.statSync(full).isDirectory()) walk(full, r);
+      else { fs.copyFileSync(full, path.join(OUT, r)); count++; }
+    }
+  };
+  walk(srcFuncs, FUNCS_DIR);
 }
 
 /* _headers — sw.js ห้าม cache (ต้องได้เวอร์ชันใหม่เสมอ) + static cache ยาว */
@@ -61,12 +77,8 @@ fs.writeFileSync(path.join(OUT, '_headers'), [
   '',
 ].join('\n'));
 
-/* _redirects — เสิร์ฟ admin.html ที่ root + proxy คำขอ /api/* ไปที่ Cloudflare Worker (หลังบ้าน) */
-fs.writeFileSync(path.join(OUT, '_redirects'), [
-  '/api/* https://moneyfast-api.moneyfast-app.workers.dev/api/:splat 200',
-  '/ /admin.html 200',
-  '',
-].join('\n'));
+/* _redirects — เสิร์ฟ admin.html ที่ root (API /api/* รันผ่าน Pages Functions ไม่ต้อง proxy) */
+fs.writeFileSync(path.join(OUT, '_redirects'), '/ /admin.html 200\n');
 
 console.log('✅ สร้างโฟลเดอร์ deploy-ready:', OUT);
 console.log('   ไฟล์ทั้งหมด:', count, 'ไฟล์ + _headers + _redirects');

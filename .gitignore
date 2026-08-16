@@ -21,3 +21,4 @@ Thumbs.db
 
 # Freebuff (แอปที่ใช้พัฒนา) — ฐานข้อมูลภายใน ไม่เกี่ยวกับโปรเจกต์
 .freebuff/
+.wrangler/
