@@ -996,7 +996,7 @@
         loginPass: 'รหัสผ่าน (Password)',
         loginBtn: 'เข้าสู่ระบบ',
         loginErr: '⚠️ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
-        fbEmail: 'อีเมล (Email)',
+        fbEmail: 'ชื่อผู้ใช้ (Username)',
         fbErrWrong: '⚠️ อีเมลหรือรหัสผ่านไม่ถูกต้อง',
         fbErrEmail: '⚠️ รูปแบบอีเมลไม่ถูกต้อง',
         fbErrMany: '⚠️ พยายามมากเกินไป กรุณารอสักครู่แล้วลองใหม่',
@@ -1164,7 +1164,7 @@
         loginPass: 'ລະຫັດຜ່ານ (Password)',
         loginBtn: 'ເຂົ້າສູ່ລະບົບ',
         loginErr: '⚠️ ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ',
-        fbEmail: 'ອີເມວ (Email)',
+        fbEmail: 'ຊື່ຜູ້ໃຊ້ (Username)',
         fbErrWrong: '⚠️ ອີເມວ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ',
         fbErrEmail: '⚠️ ຮູບແບບອີເມວບໍ່ຖືກຕ້ອງ',
         fbErrMany: '⚠️ ພະຍາຍາມຫຼາຍເກີນໄປ ກະລຸນາລໍຖ້າສັກຄູ່ແລ້ວລອງໃໝ່',
@@ -2510,10 +2510,10 @@
       $('#logout-btn').hidden = true;
       $('#login-error').classList.remove('show');
       if (FB_MODE) {
-        // ໂໝດ Firebase: ຊ່ອງທຳອິດແມ່ນອີເມວ / โหมด Firebase: ช่องแรกเป็นอีเมล
+        // ໂໝດ Firebase: ຊ່ອງທຳອິດແມ່ນຊື່ຜູ້ໃຊ້ / โหมด Firebase: ช่องแรกเป็นชื่อผู้ใช้ (กรอก username ล้วนๆ)
         const u = $('#login-user');
-        u.placeholder = 'admin@example.com';
-        u.autocomplete = 'email';
+        u.placeholder = 'admin';
+        u.autocomplete = 'username';
       }
     }
 
@@ -2529,13 +2529,15 @@
       e.preventDefault();
       if (FB_MODE) {
         /* ໂໝດ Firebase: ເຂົ້າສູ່ລະບົບດ້ວຍ Firebase Auth / โหมด Firebase: ล็อกอินด้วย Firebase Auth */
-        const u = $('#login-user').value.trim();
+        let u = $('#login-user').value.trim();
         const p = $('#login-pass').value;
         if (!u || !p) {
           $('#login-error').textContent = t('fbErrOther');
           $('#login-error').classList.add('show');
           return;
         }
+        /* กรอก username ล้วน → แปลงเป็นอีเมลลับสำหรับ Firebase Auth (กรอกอีเมลเต็มก็ใช้ได้) */
+        if (!u.includes('@')) u = u + '@moneyfast.local';
         firebase.auth().signInWithEmailAndPassword(u, p)
           .then(() => {
             $('#login-error').classList.remove('show', 'lock');
