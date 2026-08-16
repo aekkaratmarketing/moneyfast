@@ -1,28 +1,4 @@
 {
-  "hosting": {
-    "public": ".",
-    "ignore": [
-      "firebase.json",
-      "database.rules.json",
-      "**/.*",
-      "**/node_modules/**",
-      "functions/**",
-      "tools/**",
-      "data/**",
-      "server.js",
-      "README.md",
-      "ios/**",
-      ".github/**",
-      "*.sh",
-      "*.ipa"
-    ],
-    "rewrites": [
-      { "source": "/", "destination": "/admin.html" }
-    ],
-    "headers": [
-      { "source": "sw.js", "headers": [ { "key": "Cache-Control", "value": "no-cache" } ] }
-    ]
-  },
   "database": {
     "rules": "database.rules.json"
   }

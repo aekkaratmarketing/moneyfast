@@ -7,14 +7,6 @@ moneyfast-key.json
 # Node
 node_modules/
 functions/node_modules/
-ios/node_modules/
-
-# Capacitor — สร้างตอน build เท่านั้น
-ios/www/
-ios/ios/
-ios/*.ipa
-ios/Payload/
-*.ipa
 
 # Firebase CLI
 .firebase/

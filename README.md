@@ -31,128 +31,37 @@ node server.js
 
 ---
 
-## ☁️ อัปโหลดขึ้นอินเทอร์เน็ต (ใช้ได้จากทุกที่)
+## ☁️ เว็บออนไลน์ (ใช้งานจากทุกที่)
 
-### วิธีที่ 1: Render.com (ฟรี ง่ายสุด)
+เว็บแอดมิน deploy บน **Cloudflare Pages** — URL หลัก: **https://moneyfast.pages.dev**
 
-1. สมัคร https://render.com (ใช้บัญชี GitHub ได้)
-2. กด **New → Web Service** → เชื่อมต่อ repo GitHub ที่มีโฟลเดอร์นี้ (หรือ **Upload** ไฟล์ทั้งหมด)
-3. ตั้งค่า:
-   - **Name:** `moneyfast`
-   - **Root Directory:** `(ว่าง)`
-   - **Build Command:** `(เว้นว่าง — ไม่ต้อง build)`
-   - **Start Command:** `node server.js`
-   - **Instance Type:** Free
-4. กด **Deploy** รอ 2–3 นาที → ได้ลิงก์ `https://moneyfast.onrender.com`
-5. เปิด `https://moneyfast.onrender.com/admin.html`
+| ส่วน | ใช้ | หมายเหตุ |
+|---|---|---|
+| หน้าเว็บ (admin.html + PWA) | **Cloudflare Pages** | ฟรี + HTTPS + deploy อัตโนมัติจาก GitHub |
+| ข้อมูลลูกค้า | **Firebase Realtime Database** | ซิงค์เรียลไทม์ทุกเครื่อง |
+| ล็อกอินแอดมิน | **Firebase Authentication** (อีเมล/รหัส) | ปลอดภัย เปลี่ยนรหัสได้ที่คอนโซล |
 
-### วิธีที่ 2: VPS / เซิร์ฟเวอร์ตัวเอง
+### ตั้งค่า Firebase (ครั้งแรกครั้งเดียว)
 
-1. อัปโหลดทุกไฟล์ในโฟลเดอร์นี้ (รวม `server.js`, `admin.html`, `sw.js`, `manifest.json`, ไอคอน) ไปที่เซิร์ฟเวอร์
-2. รัน: `node server.js`
-3. ตั้ง reverse proxy (nginx) ชี้โดเมน/HTTPS มาที่พอร์ต 8321 — **PWA จำเป็นต้องใช้ HTTPS** (ยกเว้น localhost)
+1. สร้างโปรเจกต์ที่ https://console.firebase.google.com
+2. เปิด **Realtime Database** (region `asia-southeast1`)
+3. เปิด **Authentication** → Sign-in method → **Email/Password** → Save
+4. ตั้งค่าโปรเจกต์ ⚙ → ทั่วไป → แอปของคุณ → กด `</>` (Web) → สร้างแอป → คัดลอกค่า `apiKey` + ที่เหลือ ใส่ใน `admin.html` บล็อก `FB_CONFIG`
+5. สร้างบัญชีแอดมิน: **Authentication → Users → Add user** (อีเมล + รหัส)
 
-### วิธีที่ 3: Firebase (แนะนำ — ฟรี 100% ไม่ต้องมี backend) ⭐
+> ข้อมูล/ล็อกอินอยู่ที่ Firebase เสมอ — เว็บอยู่ที่ Cloudflare หรือที่ไหนก็เห็นข้อมูลชุดเดียวกัน
 
-สถาปัตยกรรม: หน้าแอดมินคุยกับ **Realtime Database ตรง ๆ** ผ่าน Firebase JS SDK + **ล็อกอินด้วย Firebase Authentication** — ไม่ต้องใช้ Cloud Functions (แผนฟรี Spark ใช้ได้ ไม่ผูกบัตร)
+### อัปเดตเว็บ (อัตโนมัติ)
 
-**1) สร้างโปรเจกต์** ที่ https://console.firebase.google.com → Add project
+- **push โค้ดขึ้น GitHub (main)** → workflow `Deploy to Cloudflare Pages` build + deploy ให้อัตโนมัติ
+- หรือ manual: `node tools/build-cloudflare.js` → ลาก `dist/cloudflare/` ขึ้น Cloudflare Pages
 
-**2) เปิด Realtime Database:** Build → Realtime Database → Create Database → เลือก region `asia-southeast1` (สิงคโปร์ ใกล้ไทย/ลาว)
+### โดเมนของตัวเอง (ไม่บังคับ)
 
-**3) เปิด Authentication:** Build → Authentication → **Get started** → Sign-in method → เปิด **Email/Password** → Save
-
-**4) สร้างแอป Web เพื่อเอา Firebase config:** ตั้งค่าโปรเจกต์ ⚙ → ทั่วไป → แอปของคุณ → กด `</>` (Web) → ตั้งชื่อ (เช่น `moneyfast-web`) → ลงทะเบียน → จะเห็นค่า `apiKey, authDomain, databaseURL, projectId, ...` → **คัดลอกมาใส่ในไฟล์ `admin.html`** ตรงบล็อก `FB_CONFIG` (ช่อง `apiKey` ต้องเป็นค่าจริง — พอใส่แล้วระบบจะสลับเป็นโหมด Firebase อัตโนมัติ)
-
-**5) ติดตั้งเครื่องมือ + login:**
-
-```bash
-npm install -g firebase-tools
-firebase login
-```
-
-**6) เลือกโปรเจกต์ในโฟลเดอร์นี้** (ผูกไว้แล้วที่ `.firebaserc` — ถ้าโปรเจกต์อื่นใช้ `firebase use --add`):
-
-```bash
-firebase use moneyfast-b0ac0
-```
-
-**7) Deploy หน้าเว็บ + กฎความปลอดภัย (ครั้งเดียวจบ ไม่มี functions):**
-
-```bash
-firebase deploy
-```
-
-**8) ย้ายข้อมูลเดิม + สร้างบัญชีแอดมิน** (ทำครั้งเดียว):
-
-- ดาวน์โหลด Service Account Key: ตั้งค่าโปรเจกต์ ⚙ → บัญชีบริการ → สร้างคีย์ใหม่ → JSON
-
-```bash
-node tools/migrate-firebase.js --key=path/to/serviceAccountKey.json --admin=อีเมลของคุณ:รหัสผ่าน
-```
-
-  (ถ้าไม่ใช้ `--admin` ก็สร้างบัญชีที่คอนโซล → Authentication → Users → Add user ได้)
-
-**9) เปิดใช้งาน:** `https://<project>.web.app/` → **ล็อกอินด้วยอีเมล + รหัสผ่านที่ตั้งไว้** → ข้อมูลซิงค์ข้ามเครื่องผ่าน Firebase ทันที
-
-> 💡 **หมายเหตุ:**
-> - `data/apps.json`, `server.js`, `tools/`, `functions/` จะ**ไม่ถูกอัปโหลดขึ้น Hosting** (ตั้งค่า ignore ไว้กันข้อมูลลูกค้าหลุด) — ยังใช้ `node server.js` รันในเครื่องเพื่อทดสอบได้ตามเดิม (โหมดเครื่องเดียว ล็อกอิน `admin/admin`)
-> - ถ้ายังไม่ใส่ `apiKey` จริงใน `FB_CONFIG` → หน้าเว็บเป็นโหมดเครื่องเดียว (localStorage) — พอใส่ค่าแล้วจะเข้าโหมด Firebase อัตโนมัติ
-> - **ความปลอดภัย:** กฎ RTDB อนุญาตเฉพาะผู้ที่ล็อกอินแล้ว (rules ใน `database.rules.json`) — อยากล็อกให้เฉพาะอีเมลแอดมินคนเดียว เปลี่ยน `auth != null` เป็น `auth.token.email == 'อีเมลคุณ'` ในไฟล์ rules แล้ว deploy ใหม่
-> - ปุ่ม "⚙️ ตั้งค่ารหัสผ่าน" ในหน้าแอดมินจะซ่อนอัตโนมัติในโหมด Firebase (รหัสจัดการผ่าน Firebase Auth) — ลืมรหัส ใช้คอนโซล → Authentication → Reset password
-> - โฟลเดอร์ `functions/` เก็บไว้เผื่ออนาคตอัปเกรดเป็นแผน Blaze แล้วอยากใช้ Cloud Functions (โค้ดพร้อม)
-
-> 💡 ถ้าใช้เน็ตมือถือ/ต่างสถานที่ ต้องใช้วิธี cloud — WiFi วงเดียวใช้ได้แค่ในบ้าน
+- Cloudflare → โปรเจกต์ → **Custom domains** → ใส่โดเมน (เช่น `admin.moneyfast.la`) → ตั้ง DNS — ฟรี
+- ⚠️ เปลี่ยนลิงก์/โดเมนแล้ว ต้องติดตั้ง PWA ใหม่ (Add to Home Screen อีกครั้ง)
 
 ---
-
-## ☁️ ทางเลือก: ย้ายไป Cloudflare Pages (ฟรี เร็วในไทย/ลาว)
-
-> Firebase Hosting คือที่เก็บไฟล์เว็บเท่านั้น — ข้อมูล/ล็อกอินยังอยู่ที่ Firebase (RTDB + Auth) เหมือนเดิม ย้ายได้ไม่ต้องแก้โค้ด
-
-**ขั้นที่ 1 — สร้างโฟลเดอร์ deploy-ready**
-
-```bash
-node tools/build-cloudflare.js
-```
-
-ได้โฟลเดอร์ `dist/cloudflare/` (มี `_headers` ให้ sw.js ไม่ cache + `_redirects` เสิร์ฟ admin.html ที่ root ครบ)
-
-**ขั้นที่ 2 — สร้างโปรเจกต์บน Cloudflare** (ในเบราว์เซอร์)
-
-1. ไปที่ https://dash.cloudflare.com → **Workers & Pages → Create → Pages**
-2. เลือก **Upload assets** → ตั้งชื่อโปรเจกต์ เช่น `moneyfast`
-3. **ลากโฟลเดอร์ `dist/cloudflare/`** ไปวาง → **Deploy**
-4. ได้ลิงก์ `https://moneyfast.pages.dev` — เปิดแล้วเห็นหน้าแอดมิน (ล็อกอินด้วยอีเมล Firebase เดิม)
-
-**ขั้นที่ 3 (แนะนำ) — ต่อกับ GitHub เพื่อ deploy อัตโนมัติ**
-
-- ในหน้าโปรเจกต์ Cloudflare → **Settings → Builds & deployments → Connect to Git** → เลือก repo `moneyfast`
-- Build command: `node tools/build-cloudflare.js` / Build output directory: `dist/cloudflare`
-- ตั้งค่า Environment variables ถ้าเป็น private repo (ไม่จำเป็นสำหรับ public)
-- จากนี้ push ทุกครั้ง → Cloudflare build + deploy ให้อัตโนมัติ
-
-**อีกทางเลือก — deploy อัตโนมัติผ่าน GitHub Actions (workflow ที่เตรียมไว้ให้)**
-
-มี workflow `Deploy to Cloudflare Pages` พร้อมแล้ว — push ไฟล์เว็บขึ้น main เมื่อไหร่ build + deploy ให้อัตโนมัติ ตั้งค่า 1 ครั้ง:
-
-1. **สร้าง API Token** ที่ Cloudflare: dash.cloudflare.com → **My Profile → API Tokens → Create Token** → เลือกเทมเพลต **"Edit Cloudflare Workers"** → เปลี่ยนสิทธิ์เป็น **Account → Cloudflare Pages → Edit** → Continue → Create → คัดลอก token
-2. **หา Account ID**: หน้าแรก dash.cloudflare.com → แถบขวา **Account ID** (เลขยาวๆ)
-3. **เพิ่ม secrets ใน GitHub**: repo `moneyfast` → **Settings → Secrets and variables → Actions → New repository secret**:
-   - `CLOUDFLARE_API_TOKEN` = token จากข้อ 1
-   - `CLOUDFLARE_ACCOUNT_ID` = Account ID จากข้อ 2
-4. push โค้ดขึ้น main → ไป **Actions** → เห็นงาน `Deploy to Cloudflare Pages` → ✅ เสร็จ เปิด `https://moneyfast.pages.dev`
-
-> ครั้งแรก wrangler จะ**สร้างโปรเจกต์ `moneyfast` บน Cloudflare ให้อัตโนมัติ** (ถ้ายังไม่มี) — ถ้าสร้างผ่าน Dashboard ไว้แล้วจะอัปเดตเข้าโปรเจกต์เดิม
-
-**ขั้นที่ 4 — ใช้โดเมนของตัวเอง (ไม่บังคับ)**
-
-- Cloudflare → โปรเจกต์ → **Custom domains** → ใส่โดเมน (เช่น `admin.moneyfast.la`) → ตั้ง DNS ตามที่บอก — ฟรีไม่เสียเงิน
-
-> ⚠️ หมายเหตุ: PWA ลงหน้าจอ iPhone ต้องเปิดผ่าน HTTPS (Cloudflare ให้ฟรี) — ถ้าเปลี่ยนโดเมน/ลิงก์ใหม่ ต้องติดตั้ง PWA จากลิงก์ใหม่ (Add to Home Screen อีกครั้ง)
-
----
-
 ## 📲 ติดตั้ง PWA ลง iPhone (ทีละขั้น)
 
 > ทำหลังเว็บอัปโหลดขึ้นอินเทอร์เน็ตแล้ว (HTTPS)
