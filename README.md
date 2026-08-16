@@ -106,6 +106,40 @@ node tools/migrate-firebase.js --key=path/to/serviceAccountKey.json --admin=อ�
 
 ---
 
+## ☁️ ทางเลือก: ย้ายไป Cloudflare Pages (ฟรี เร็วในไทย/ลาว)
+
+> Firebase Hosting คือที่เก็บไฟล์เว็บเท่านั้น — ข้อมูล/ล็อกอินยังอยู่ที่ Firebase (RTDB + Auth) เหมือนเดิม ย้ายได้ไม่ต้องแก้โค้ด
+
+**ขั้นที่ 1 — สร้างโฟลเดอร์ deploy-ready**
+
+```bash
+node tools/build-cloudflare.js
+```
+
+ได้โฟลเดอร์ `dist/cloudflare/` (มี `_headers` ให้ sw.js ไม่ cache + `_redirects` เสิร์ฟ admin.html ที่ root ครบ)
+
+**ขั้นที่ 2 — สร้างโปรเจกต์บน Cloudflare** (ในเบราว์เซอร์)
+
+1. ไปที่ https://dash.cloudflare.com → **Workers & Pages → Create → Pages**
+2. เลือก **Upload assets** → ตั้งชื่อโปรเจกต์ เช่น `moneyfast`
+3. **ลากโฟลเดอร์ `dist/cloudflare/`** ไปวาง → **Deploy**
+4. ได้ลิงก์ `https://moneyfast.pages.dev` — เปิดแล้วเห็นหน้าแอดมิน (ล็อกอินด้วยอีเมล Firebase เดิม)
+
+**ขั้นที่ 3 (แนะนำ) — ต่อกับ GitHub เพื่อ deploy อัตโนมัติ**
+
+- ในหน้าโปรเจกต์ Cloudflare → **Settings → Builds & deployments → Connect to Git** → เลือก repo `moneyfast`
+- Build command: `node tools/build-cloudflare.js` / Build output directory: `dist/cloudflare`
+- ตั้งค่า Environment variables ถ้าเป็น private repo (ไม่จำเป็นสำหรับ public)
+- จากนี้ push ทุกครั้ง → Cloudflare build + deploy ให้อัตโนมัติ
+
+**ขั้นที่ 4 — ใช้โดเมนของตัวเอง (ไม่บังคับ)**
+
+- Cloudflare → โปรเจกต์ → **Custom domains** → ใส่โดเมน (เช่น `admin.moneyfast.la`) → ตั้ง DNS ตามที่บอก — ฟรีไม่เสียเงิน
+
+> ⚠️ หมายเหตุ: PWA ลงหน้าจอ iPhone ต้องเปิดผ่าน HTTPS (Cloudflare ให้ฟรี) — ถ้าเปลี่ยนโดเมน/ลิงก์ใหม่ ต้องติดตั้ง PWA จากลิงก์ใหม่ (Add to Home Screen อีกครั้ง)
+
+---
+
 ## 📲 ติดตั้ง PWA ลง iPhone (ทีละขั้น)
 
 > ทำหลังเว็บอัปโหลดขึ้นอินเทอร์เน็ตแล้ว (HTTPS)

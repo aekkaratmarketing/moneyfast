@@ -19,6 +19,9 @@ ios/Payload/
 # Firebase CLI
 .firebase/
 
+# โฟลเดอร์ build ที่สร้างโดยสคริปต์ (tools/build-*.js)
+dist/
+
 # ระบบ
 .DS_Store
 Thumbs.db
