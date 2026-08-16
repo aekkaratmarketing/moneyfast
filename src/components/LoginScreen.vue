@@ -88,7 +88,7 @@ onUnmounted(() => clearInterval(lockTimer));
 <template>
   <div id="login-screen">
     <div class="card login-card">
-      <div class="login-logo"><span class="logo-icon">⚡</span> MoneyFast <span class="logo-sub">{{ t('brandTag') }}</span></div>
+      <div class="login-logo"><span class="logo-icon">⚡</span> {{ t('brandName') }} <span class="logo-sub">{{ t('brandTag') }}</span></div>
       <h2>{{ t('loginTitle') }}</h2>
       <p class="login-sub">{{ t('loginSub') }}</p>
       <form id="login-form" novalidate @submit.prevent="submit">

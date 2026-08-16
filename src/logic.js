@@ -169,6 +169,20 @@ export function toDateInput(d) {
   return y + '-' + m + '-' + day;
 }
 
+/* แปลง epoch → ค่า input datetime-local (ตามเวลา Asia/Bangkok) */
+export function toDateTimeInput(ts) {
+  const d = new Date((Number(ts) || Date.now()) + TZ_OFF);
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}T${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
+}
+
+/* แปลงค่า input datetime-local (เวลา Asia/Bangkok) → epoch ms */
+export function fromDateTimeInput(str) {
+  if (!str) return null;
+  const ms = Date.parse(String(str).replace(' ', 'T') + '+07:00');
+  return isNaN(ms) ? null : ms;
+}
+
 export function quoteCsv(v) {
   return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
 }
@@ -187,7 +201,7 @@ export function buildCsv(list) {
   const totalAmount = list.reduce((s, a) => s + Number(a.amount || 0), 0);
   const new30 = list.filter((a) => Date.now() - a.createdAt <= 30 * DAY).length;
 
-  lines.push(quoteCsv(t('expReportTitle') + ' — MoneyFast'));
+  lines.push(quoteCsv(t('expReportTitle') + ' — ' + t('brandName') + t('brandTag')));
   lines.push(quoteCsv(t('expGenerated')) + ',' + quoteCsv(now.toLocaleString(locale(), { timeZone: TZ })));
   lines.push('');
 

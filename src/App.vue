@@ -112,7 +112,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
   <header class="navbar">
     <div class="container nav-inner">
       <div class="nav-left">
-        <a href="/" class="logo"><span class="logo-icon">⚡</span> MoneyFast <span class="logo-sub">{{ t('brandTag') }}</span></a>
+        <a href="/" class="logo"><span class="logo-icon">⚡</span> {{ t('brandName') }} <span class="logo-sub">{{ t('brandTag') }}</span></a>
         <button type="button" class="theme-btn" :aria-label="dark ? t('themeLight') : t('themeDark')" @click="toggleTheme">{{ dark ? '☀️' : '🌙' }}</button>
         <div class="lang-switch" role="group" aria-label="ภาษา">
           <button type="button" class="lang-btn" :class="{ active: lang === 'th' }" @click="switchLang('th')">ไทย</button>
@@ -135,8 +135,8 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown));
 
   <footer class="footer">
     <div class="container footer-inner">
-      <div class="logo"><span class="logo-icon">⚡</span> MoneyFast <span class="logo-sub">{{ t('brandTag') }}</span></div>
-      <p>© {{ year }} MoneyFast — {{ t('footerNote') }}</p>
+      <div class="logo"><span class="logo-icon">⚡</span> {{ t('brandName') }} <span class="logo-sub">{{ t('brandTag') }}</span></div>
+      <p>© {{ year }} {{ t('brandName') }}{{ t('brandTag') }}</p>
     </div>
   </footer>
 

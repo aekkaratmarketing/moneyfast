@@ -2,14 +2,14 @@
 import { reactive, ref, computed, watch } from 'vue';
 import { store } from '../store';
 import { t } from '../i18n';
-import { MIN_AMOUNT, MAX_AMOUNT, fmtKip, fileToResizedDataUrl } from '../logic';
+import { MIN_AMOUNT, MAX_AMOUNT, fmtKip, fileToResizedDataUrl, toDateTimeInput, fromDateTimeInput } from '../logic';
 import { getApps, saveApps, showToast } from '../apps';
 
 const MAX_IMAGES = 10;
 
-const form = reactive({ first: '', last: '', phone: '', fb: '', amount: '' });
+const form = reactive({ first: '', last: '', phone: '', fb: '', amount: '', loanDate: '' });
 const images = ref([]);          // [{ name, dataUrl }]
-const errors = reactive({ first: '', last: '', phone: '', amount: '', house: '' });
+const errors = reactive({ first: '', last: '', phone: '', amount: '', loanDate: '', house: '' });
 const submitting = ref(false);
 
 const isEdit = computed(() => !!store.editingId);
@@ -30,6 +30,7 @@ function initForm() {
     form.phone = app.phone || '';
     form.fb = app.fb || '';
     form.amount = app.amount || '';
+    form.loanDate = toDateTimeInput(app.createdAt || Date.now());
     images.value = (Array.isArray(app.houseImages) ? app.houseImages : [])
       .map((h) => ({ name: (h && h.name) || '', dataUrl: (h && (h.dataUrl || h)) || '' }))
       .filter((h) => h.dataUrl);
@@ -42,6 +43,7 @@ function initForm() {
     form.phone = '';
     form.fb = '';
     form.amount = '';
+    form.loanDate = toDateTimeInput(Date.now());
     images.value = [];
   }
   Object.keys(errors).forEach((k) => { errors[k] = ''; });
@@ -90,6 +92,7 @@ function validate() {
     errors.amount = t('errAmount', { min: fmtKip(MIN_AMOUNT), max: fmtKip(MAX_AMOUNT) });
     ok = false;
   } else errors.amount = '';
+  if (!fromDateTimeInput(form.loanDate)) { errors.loanDate = t('errLoanDate'); ok = false; } else errors.loanDate = '';
   return ok;
 }
 
@@ -145,6 +148,7 @@ function doSave() {
         houseFileName: houseImages.length ? houseImages.map((h) => h.name).join(', ') : '',
         houseImages: houseImages,
         amount: amount,
+        createdAt: fromDateTimeInput(form.loanDate) || old.createdAt,
       });
       if (!saveWithQuotaFallback(list[idx])) return;
     }
@@ -158,7 +162,7 @@ function doSave() {
       houseFileName: houseImages.length ? houseImages.map((h) => h.name).join(', ') : '',
       houseImages: houseImages,
       amount: amount,
-      createdAt: Date.now(),
+      createdAt: fromDateTimeInput(form.loanDate) || Date.now(),
     };
     list.unshift(app);
     if (!saveWithQuotaFallback(app)) return;
@@ -224,6 +228,12 @@ function doSave() {
           <label for="a-amount" v-html="t('lblAmount')"></label>
           <input type="number" id="a-amount" v-model="form.amount" min="100000" max="500000000" step="100000" inputmode="numeric" placeholder="2000000">
           <small class="error-msg">{{ errors.amount }}</small>
+        </div>
+
+        <div class="field" :class="{ invalid: !!errors.loanDate }">
+          <label for="a-loandate" v-html="t('lblLoanDate')"></label>
+          <input type="datetime-local" id="a-loandate" v-model="form.loanDate">
+          <small class="error-msg">{{ errors.loanDate }}</small>
         </div>
 
         <div v-if="showSummary" class="form-summary show" v-html="t('formSummaryHtml', { principal: fmtKip(Number(form.amount)) })"></div>
