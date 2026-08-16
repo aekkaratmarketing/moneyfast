@@ -50,6 +50,11 @@
         if (!link) return;
         link.addEventListener('load', function () { rec('css', true, 'CSS/ฟอนต์โหลดครบ'); });
         link.addEventListener('error', function () { rec('css', false, 'CSS/ฟอนต์โหลดไม่สำเร็จ'); });
+        // iOS Safari มักไม่ยิง load event ของ link media=print → ฟอนต์ไม่ถูก apply
+        // fallback: หลัง 3 วิ ถ้ายังเป็น print ให้เปลี่ยนเป็น all
+        setTimeout(function () {
+          if (link.media === 'print') { link.media = 'all'; rec('css', true, 'CSS/ฟอนต์ (fallback iOS)'); }
+        }, 3000);
       }
       if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', hookCss); else hookCss();
 
