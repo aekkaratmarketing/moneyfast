@@ -2,7 +2,7 @@
    ໜ້າເວັບ: network-first (ໄດ້ເວີຊັນໃໝ່ສະເໝີ)
    ໄຟລ໌ static: cache-first (ໂຫຼດໄວ + ໃຊ້ງານ offline ໄດ້)
    หน้าเว็บ: network-first (ได้เวอร์ชันใหม่เสมอ) / ไฟล์ static: cache-first (โหลดเร็ว + ใช้ offline ได้) */
-const CACHE = 'moneyfast-v3';
+const CACHE = 'moneyfast-v4';
 const CORE = [
   './',
   './admin.html',
@@ -10,9 +10,10 @@ const CORE = [
   './icon-192.png',
   './icon-512.png',
   './apple-touch-icon.png',
-  'https://www.gstatic.com/firebasejs/11.6.0/firebase-app-compat.js',
-  'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth-compat.js',
-  'https://www.gstatic.com/firebasejs/11.6.0/firebase-database-compat.js',
+  './vendor/firebase/firebase-app-compat.js',
+  './vendor/firebase/firebase-auth-compat.js',
+  './vendor/firebase/firebase-database-compat.js',
+  './vendor/fonts/fonts.css',
 ];
 
 self.addEventListener('install', (e) => {
