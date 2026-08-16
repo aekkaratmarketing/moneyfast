@@ -925,7 +925,7 @@
     const THEME_KEY = 'moneyfast_theme';
 
     /* ---------- Cloudflare backend (ข้อมูล + ล็อกอินอยู่ที่ Cloudflare Worker/KV — ไม่มี Firebase) ---------- */
-    const API_BASE = 'https://moneyfast.pages.dev/api';
+    const API_BASE = '/api'; // เดียวกันกับหน้าเว็บ (Pages Functions — ใช้ custom domain ได้ด้วย ไม่มี CORS)
     function getToken() { try { return localStorage.getItem(AUTH_KEY) || ''; } catch (e) { return ''; } }
 
     const $ = (sel) => document.querySelector(sel);
